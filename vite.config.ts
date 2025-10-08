@@ -7,10 +7,6 @@ import fs from 'fs';
 export default defineConfig({
 	plugins: [tailwindcss(), sveltekit(), enhancedImages()],
 	server: {
-		port: 443,
-		https: {
-			key: fs.readFileSync('./server.key'),
-            cert: fs.readFileSync('./server.crt')
-		}
+		port: 80
 	}
 });
