@@ -1,9 +1,13 @@
 <script lang="ts">
-	import { createRawSnippet, type Snippet } from "svelte";
-	import ActionCard from "../../../comp/actionCard.svelte";
-	import Header from "../../../comp/header.svelte";
-	import ListingComp from "../../../comp/listingComp.svelte";
-	import TopActionCard from "../../../comp/topActionCard.svelte";
+	import ActionCard from "$lib/comp/actionCard.svelte";
+	import Header from "$lib/comp/header.svelte";
+	import ListingComp from "$lib/comp/listingComp.svelte";
+	import TopActionCard from "$lib/comp/topActionCard.svelte";
+
+    function beforeUnload(event: BeforeUnloadEvent): any{
+        event.preventDefault();
+        return '';
+    }
 
   type UnitItem = {
     id: number | string;
@@ -91,6 +95,8 @@
     let itemEdit: boolean = $state(false);
 </script>
 
+<svelte:window onbeforeunload={beforeUnload} />
+
 <div class="h-fit w-screen flex flex-col justify-center items-center gap-4">
     <Header onclick={() => {
         if(itemEdit){
@@ -147,7 +153,7 @@
                     </div>
                 </div>
             </TopActionCard>
-            <ActionCard useSVG={false} label="Lihat Absensi" class="bg-green-500 w-full" onclick={() => {
+            <ActionCard useSVG={false} label="Lihat Absensi" class="bg-gradient-to-b from-green-500 via-green-600 to-green-700 w-full" onclick={() => {
                 lihatRoom=false;lihatAbsensi=true;lihatMasalah=false;
                 subMenu.pengaturan = -1;
                 subMenu.laporan = -1;
@@ -180,7 +186,7 @@
             </footer>
         </div>
     {:else if subMenu.laporan >= 1 && subMenu.pengaturan === 0}
-        <ListingComp editable={false} items={laporanItems} ifItems={true} ifOther={false} title={subMenu.titleSubMenu} itemEdit={itemEdit} selectedItemsID={subMenu.currentItemEditID}>
+        <ListingComp disableAddButton={true} editable={false} items={laporanItems} ifItems={true} ifOther={false} title={subMenu.titleSubMenu} itemEdit={itemEdit} selectedItemsID={subMenu.currentItemEditID}>
             <section>
                 <div class="w-full h-full flex flex-col justify-between items-center bg-amber-100">
                     <div class="w-full h-fit flex justify-between items-center">
@@ -213,7 +219,7 @@
             </section>
         </ListingComp>
     {:else if subMenu.pengaturan >= 1 && subMenu.laporan === 0}
-        <ListingComp editable={false} items={pengaturanItems} ifItems={true} ifOther={false} title={subMenu.titleSubMenu} itemEdit={itemEdit} selectedItemsID = {subMenu.currentItemEditID}>
+        <ListingComp disableAddButton={true} editable={false} items={pengaturanItems} ifItems={true} ifOther={false} title={subMenu.titleSubMenu} itemEdit={itemEdit} selectedItemsID = {subMenu.currentItemEditID}>
             <section>
                 
             </section>

@@ -68,7 +68,7 @@
   </header>
 
   <!-- Konten Utama: Waktu dan Salam -->
-  <main class="flex-grow flex flex-col items-center justify-center text-center py-8">
+  <main class="flex-grow flex flex-col items-center justify-center text-center">
     <div class="text-9xl font-bold tracking-tight">
       {formattedTime}
     </div>

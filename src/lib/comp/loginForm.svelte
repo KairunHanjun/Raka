@@ -1,16 +1,30 @@
 <script lang="ts">
   // Svelte state runes to hold the form input values
-  let username = $state('');
-  let password = $state('');
-  let { object = {back: true, selamatText: []} } = $props();
-  function handleLogin(){
+  import { enhance } from "$app/forms";
 
+  type DataLogin = {
+    username: string;
+    password: string;
+    session: string;
   }
+
+  let { 
+    back = true, 
+    selamatText = [],
+    onsubmit: handleLogin = () => {},
+    dataLogin = {username: '', password: '', session: ''}
+  } = $props<{
+    dataLogin?: DataLogin
+    back?: boolean;
+    selamatText?: Array<string>;
+    onsubmit?: void | (() => void) | (() => {});
+  }>();
+  
 
 </script>
 
 <div class="bg-slate-200 p-8 md:p-12 rounded-3xl shadow-lg w-full max-w-md border border-slate-300">
-  <form onsubmit={handleLogin} class="flex flex-col gap-6">
+  <form onsubmit={handleLogin} class="flex flex-col gap-6" use:enhance>
     
     <!-- Username Input -->
     <div>
@@ -20,7 +34,7 @@
       <input 
         type="text" 
         id="username"
-        bind:value={username}
+        bind:value={dataLogin.username}
         class="w-full px-4 py-3 rounded-2xl border-2 border-slate-300 bg-white focus:outline-none focus:ring-4 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200"
       />
     </div>
@@ -33,7 +47,7 @@
       <input 
         type="password" 
         id="password"
-        bind:value={password}
+        bind:value={dataLogin.password}
         class="w-full px-4 py-3 rounded-2xl border-2 border-slate-300 bg-white focus:outline-none focus:ring-4 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200"
       />
     </div>
@@ -44,8 +58,8 @@
       <button 
         type="button" 
         onclick={() => {
-            object.back = false;
-            object.selectedText = ["Selamat Datang", "Login Sebagai"]
+            back = false;
+            selamatText = ["Selamat Datang", "Login Sebagai"]
         }}
         class="
           w-full bg-slate-400 text-white font-bold

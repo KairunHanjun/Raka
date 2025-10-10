@@ -1,13 +1,12 @@
 <script lang='ts'>
 	import { createRawSnippet, type Snippet } from "svelte";
-	import ActionCard from "../../comp/actionCard.svelte";
-	import ButtonLogin from "../../comp/buttonLogin.svelte";
-	import Header from "../../comp/header.svelte";
-	import ListingComp from "../../comp/listingComp.svelte";
-	import LoginForm from "../../comp/loginForm.svelte";
-	import MessageBox from "../../comp/messageBox.svelte";
-  import SelamatDatang from "../../comp/selamatDatang.svelte";
-	import TopActionCard from "../../comp/topActionCard.svelte";
+	import ActionCard from "$lib/comp/actionCard.svelte";
+	import Header from "$lib/comp/header.svelte";
+	import ListingComp from "$lib/comp/listingComp.svelte";
+	import LoginForm from "$lib/comp/loginForm.svelte";
+	import MessageBox from "$lib/comp/messageBox.svelte";
+  import SelamatDatang from "$lib/comp/selamatDatang.svelte";
+	import TopActionCard from "$lib/comp/topActionCard.svelte";
   let buttonText = ["Front Office", "House Keeping", "Teknisi", "Host"]
   let selected = $state("Loading");
   let testChangeable = 0;
