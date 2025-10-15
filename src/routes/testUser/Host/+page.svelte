@@ -1,19 +1,26 @@
 <script lang="ts">
+	import { enhance } from "$app/forms";
+	import { invalidateAll } from "$app/navigation";
 	import ActionCard from "$lib/comp/actionCard.svelte";
 	import Header from "$lib/comp/header.svelte";
 	import ListingComp from "$lib/comp/listingComp.svelte";
+	import MessageBox from "$lib/comp/messageBox.svelte";
 	import TopActionCard from "$lib/comp/topActionCard.svelte";
-
-    function beforeUnload(event: BeforeUnloadEvent): any{
-        event.preventDefault();
-        return '';
-    }
+	import type { PageProps } from "./$types";
 
   type UnitItem = {
-    id: number | string;
-    name: string;
-    name2: string;
-    event: void | (() => {}) | (() => void);
+    id: number | string | any;
+    name: string | any;
+    name2: string | any;
+    event: void | (() => {}) | (() => void) | any;
+    editEvent: void | (() => {}) | (() => void) | any;
+  };
+
+  const accountTypeMap = {
+    'FO': 'Front Office',
+    'HK': 'House Keeping',
+    'T': 'Teknisi',
+    'H': 'Host'
   };
 
   const laporanItems: UnitItem[] = $state([
@@ -25,7 +32,8 @@
             itemEdit = true;
             subMenu.currentItemEditID = 0;
             subMenu.titleSubMenu = 'Unit';
-        }
+        },
+        editEvent: () => {}
     },
     {
         id: 1,
@@ -35,7 +43,8 @@
             itemEdit = true;
             subMenu.currentItemEditID = 1;
             subMenu.titleSubMenu = 'Masalah';
-        }
+        },
+        editEvent: () => {}
     },
     {
         id: 2,
@@ -45,7 +54,8 @@
             itemEdit = true;
             subMenu.currentItemEditID = 2;
             subMenu.titleSubMenu = 'Absensi';
-        }
+        },
+        editEvent: () => {}
     }
     ]);
 
@@ -55,50 +65,222 @@
         name: 'Edit Akun',
         name2: '',
         event: () => {
-            itemEdit = true;
+            itemEdit = false;
             subMenu.currentItemEditID = 0;
             subMenu.titleSubMenu = 'Edit Akun';
-        }
+            if(subMenu.pengaturan < 2){
+                subMenu.pengaturan++;
+            }
+            for (let i = 0; i < menuClick.length; i++) {
+                menuClick[i] = false;
+            }
+            menuClick[3] = true;
+        },
+        editEvent: () => {}
     },
     {
         id: 1,
         name: 'Edit Unit',
         name2: '',
         event: () => {
-            itemEdit = true;
+            
+            itemEdit = false;
             subMenu.currentItemEditID = 1;
             subMenu.titleSubMenu = 'Edit Unit';
-        }
+            if(subMenu.pengaturan < 2){
+                subMenu.pengaturan++;
+            }
+            for (let i = 0; i < menuClick.length; i++) {
+                menuClick[i] = false;
+            }
+            menuClick[4] = true;
+            //TODO: get unit here in here
+        },
+        editEvent: () => {}
     },
     {
         id: 2,
         name: 'Edit Agent',
         name2: '',
         event: () => {
-            itemEdit = true;
+            itemEdit = false;
             subMenu.currentItemEditID = 2;
             subMenu.titleSubMenu = 'Edit Agent';
-        }
-    }
-])
+            if(subMenu.pengaturan < 2){
+                subMenu.pengaturan++;
+            }
+            for (let i = 0; i < menuClick.length; i++) {
+                menuClick[i] = false;
+            }
+            menuClick[5] = true;
+            //TODO: get agent in here
+        },
+        editEvent: () => {}
+    }])
 
-  interface SubMenu {
-    pengaturan: number;
-    laporan: number;
-    currentItemEditID: number;
-    titleSubMenu: string;
-  }
-    let lihatRoom: boolean = $state(false)
-    let lihatAbsensi: boolean = $state(false)
-    let lihatMasalah: boolean = $state(false)
+    let editAkun: string = $state('');
+    let editAkunId: string = $state('');
+    const userItems: UnitItem[] = $state([]);
+    interface SubMenu {
+        pengaturan: number;
+        laporan: number;
+        currentItemEditID: number;
+        titleSubMenu: string;
+    }
+    const pengaturanAturan: Array<boolean> = $state([true, false]);
+    const pengaturanAturan2: Array<boolean> = $state([true, false]);
+    
+    interface ServerResponseFetch {
+        success?: boolean;
+        message?: string;
+        error?: string;
+    }
+        
+    let serverResponseFetch: ServerResponseFetch = $state(undefined!);
+
+    let addAccount: boolean = $state(false);
+    let forAccount: number = $state(0);
+    const menuClick: Array<boolean> = $state([false, false, false, false, false, false]);
     let subMenu: SubMenu = $state({pengaturan: 0, laporan: 0, currentItemEditID: -1, titleSubMenu: ""});
     let itemEdit: boolean = $state(false);
+    function pengaturanClick2(){
+        pengaturanAturan2[0] = !pengaturanAturan2[0];
+        pengaturanAturan2[1] = !pengaturanAturan2[1];
+    }
+
+
+    function emptiedArray(arrayHere: Array<any>){
+        while(arrayHere.length > 0) {
+            arrayHere.pop();
+        }
+    }
+    // IN HERE WE FETCH DATA FROM BACKEND OR SEND IT
+    let { data, form }: PageProps = $props();
+    let getData: any = $state(false);
+    let editData: any = $state(false);
+    if(data){
+        if(data.error) getData = true;
+        else {
+            data.dataAkun?.forEach((data) => {
+                userItems.push({
+                    id: data.id,
+                    name: data.username.toLocaleUpperCase(),
+                    name2: accountTypeMap[data.accountType] || 'Tidak Dikenali',
+                    event: (() => {
+                        pengaturanClick2();
+                        editAkun = data.username;
+                        editAkunId = data.id;
+                    }),
+                    editEvent: (() => {
+                        editAkun = data.username;
+                        editAkunId = data.id;
+                        forAccount = -1;
+                        editData = true;
+                    })
+                })
+            })
+        }
+    }
 </script>
 
-<svelte:window onbeforeunload={beforeUnload} />
+<!-- <svelte:window onbeforeunload={beforeUnload} /> -->
+
+{#if serverResponseFetch?.success}
+    <MessageBox title="Berhasil dihapus" type="info" buttonType="ok" handleResult={
+        async () => {
+            await invalidateAll();
+            if (!pengaturanAturan2[0] && pengaturanAturan2[1]) {
+                pengaturanClick2();
+                addAccount = false;
+                forAccount = 0;
+                editData = false;
+                return;
+            }
+        }
+    }>
+        <div class="w-full h-fit flex flex-col justify-between items-center object-center text-center">
+            <p class=" font-bold">Berhasil: </p>
+            <p class=" text-amber-300">{serverResponseFetch?.message}</p>
+        </div>
+    </MessageBox>
+{:else if serverResponseFetch}
+    {#if !serverResponseFetch.success}
+        <MessageBox title="Gagal dihapus" type="info" buttonType="ok" handleResult={
+            async () => {
+                await invalidateAll();
+                if (!pengaturanAturan2[0] && pengaturanAturan2[1]) {
+                    pengaturanClick2();
+                    addAccount = false;
+                    forAccount = 0;
+                    editData = false;
+                    return;
+                }
+            }
+        }>
+            <div class="w-full h-fit flex flex-col justify-between items-center object-center text-center">
+                <p class=" font-bold">Masukan Error: </p>
+                <p class=" text-amber-300">{serverResponseFetch.message}</p>
+            </div>
+        </MessageBox>
+    {/if}
+{/if}
+
+{#if (form?.error && getData) || (data?.error && getData)}
+    <MessageBox title="Masalah Terjadi!" type="warning" buttonType="ok" handleResult={
+        () => {
+            getData = false;
+        }
+    }>
+        <div class="w-full h-fit flex flex-col justify-between items-center object-center text-center">
+            {#if form}
+                <p class=" font-bold">Masukan Error: </p>
+                <p class=" text-amber-300">{form?.description}</p>
+            {/if}
+            {#if data}
+                <p class=" font-bold">Masukan Error: </p>
+                <p class=" text-amber-300">{data?.description}</p>
+            {/if}
+        </div>
+    </MessageBox>
+{:else if editData}
+    <MessageBox title="Hapus Akun" type="warning" buttonType='yesno' handleResult={
+        async (result: any) => {
+            if(result){
+                if(result === 'yes'){
+                    const formData = new FormData();
+                    formData.append('id', editAkunId);
+                    formData.append('username', editAkun);
+                    try{
+                        const response = await fetch('?/deleteAccount', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        const result = await response.json();
+                        //TODO: The data keep doing weird non-interface thing
+                        //TODO: Fix cannot delete the second after adding an account
+                        serverResponseFetch = result;
+                    }catch (error) {}
+                }
+            }
+            editData = false;
+        }
+    }>
+    <p class=" text-amber-300">Yakin ingin hapus akun ini? {editAkun}</p>
+    </MessageBox>
+{/if}
+
 
 <div class="h-fit w-screen flex flex-col justify-center items-center gap-4">
     <Header onclick={() => {
+        if (!pengaturanAturan2[0] && pengaturanAturan2[1]) {
+            pengaturanClick2();
+            addAccount = false;
+            forAccount = 0;
+            return;
+        }
+        for (let i = 0; i < menuClick.length; i++) {
+            menuClick[i] = false;
+        }
         if(itemEdit){
             itemEdit = false;
             subMenu.titleSubMenu = (subMenu.pengaturan >= 1) ? "Pengaturan" : ((subMenu.laporan >= 1) ? "Laporan" : "");
@@ -112,7 +294,6 @@
             subMenu.laporan--;
             subMenu.titleSubMenu = "Laporan"
         }else{
-            lihatRoom=false;lihatAbsensi=false;lihatMasalah=false;
             subMenu.pengaturan = 0;
             subMenu.laporan = 0;
         }
@@ -120,7 +301,10 @@
     {#if subMenu.pengaturan === 0 && subMenu.laporan === 0}
         <div class="h-fit w-fit flex flex-col justify-center items-center gap-4">
             <TopActionCard label="Lihat Room" onclick={() => {
-                lihatRoom=true;lihatAbsensi=false;lihatMasalah=false;
+                for (let i = 0; i < menuClick.length; i++) {
+                    menuClick[i] = false;
+                }
+                menuClick[0] = true;
                 subMenu.pengaturan = -1;
                 subMenu.laporan = -1;
                 }}>
@@ -142,7 +326,10 @@
                 </div>
             </TopActionCard>
             <TopActionCard label="Lihat Masalah" onclick={() => {
-                lihatRoom=false;lihatAbsensi=false;lihatMasalah=true;
+                for (let i = 0; i < menuClick.length; i++) {
+                    menuClick[i] = false;
+                }
+                menuClick[1] = true;
                 subMenu.pengaturan = -1;
                 subMenu.laporan = -1;
                 }}>
@@ -154,12 +341,15 @@
                 </div>
             </TopActionCard>
             <ActionCard useSVG={false} label="Lihat Absensi" class="bg-gradient-to-b from-green-500 via-green-600 to-green-700 w-full" onclick={() => {
-                lihatRoom=false;lihatAbsensi=true;lihatMasalah=false;
+                for (let i = 0; i < menuClick.length; i++) {
+                    menuClick[i] = false;
+                }
+                menuClick[2] = true;
                 subMenu.pengaturan = -1;
                 subMenu.laporan = -1;
                 }}/>
             <!-- svelte-ignore a11y_consider_explicit_label -->
-            <footer class="w-full h-fit inset-x-0 bottom-0 rounded-t-2xl bg-gradient-to-r from-blue-600 to-indigo-800 flex items-center justify-around z-40">
+            <footer class="w-full h-full mt-auto inset-x-0 bottom-0 rounded-t-2xl bg-gradient-to-r from-blue-600 to-indigo-800 flex items-center justify-around z-40">
             <!-- Tombol Clipboard -->
                 <button onclick={() => {
                     subMenu.pengaturan = 0;
@@ -219,21 +409,98 @@
             </section>
         </ListingComp>
     {:else if subMenu.pengaturan >= 1 && subMenu.laporan === 0}
-        <ListingComp disableAddButton={true} editable={false} items={pengaturanItems} ifItems={true} ifOther={false} title={subMenu.titleSubMenu} itemEdit={itemEdit} selectedItemsID = {subMenu.currentItemEditID}>
-            <section>
-                
-            </section>
-        </ListingComp>
+        {#if subMenu.pengaturan == 2 && menuClick[3]}
+            <ListingComp disableAddButton={false} editable={true} items={userItems} ifItems={pengaturanAturan2[0]} ifOther={false} itemEdit={pengaturanAturan2[1]} title={subMenu.titleSubMenu} selectedItemsID={forAccount} onclick={() => {
+                addAccount = true;
+                //TODO: Fix this 
+                pengaturanClick2();
+                forAccount = 1 ;
+            }}>
+                {#if (addAccount && !form?.horay) || ((editAkun || editAkun.trim() !== '') && !form?.horay)}
+                    <form action="?/{((editAkun || editAkun.trim() !== '')) ? 'editAccount' : 'addAccount'}" method="post" class="flex flex-col w-full max-w-sm h-fit gap-2" use:enhance={() => {
+                        return async ({update}) => {
+                            await update();
+                            emptiedArray(userItems);
+                            form?.dataAkun?.forEach((data) => {
+                                userItems.push({
+                                    id: data.id,
+                                    name: data.username.toLocaleUpperCase(),
+                                    name2: accountTypeMap[data.accountType] || 'Tidak Dikenali',
+                                    event: (() => {
+                                        pengaturanClick2();
+                                        editAkun = data.username;
+                                        editAkunId = data.id;
+                                    }),
+                                    editEvent: (() => {
+                                        editAkun = data.username;
+                                        editAkunId = data.id;
+                                        forAccount = -1;
+                                    })
+                                })
+                            });
+                            getData = true;
+                            
+                        }
+                    }}>
+                        <label for="Role">Role :</label>
+                        <select name="Role" id="role" required>
+                            <option value="FO">Front Office</option>
+                            <option value="HK">House Keeping</option>
+                            <option value="T">Teknisi</option>
+                            <option value="H">Host</option>
+                        </select>
+                        <label for="Email">Email: </label>
+                        <input type="email" name="Email" id="email" required>
+                        <label for="Telp">Nomor Whatsapp: </label>
+                        <input type="text" name="Telp" id="telp" required>
+                        <label for="Username">Username: </label>
+                        <input type="text" name="Username" id="username" value={((editAkun || editAkun.trim() !== '')) ? editAkun : ''} required>
+                        <label for="">Password: </label>
+                        <input type="password" name="Password" id="password" required>
+                        <input type="hidden" name="editAkunId" class="" value={(editAkunId.trim() !== '') ? editAkunId : ''}>
+                        <button type="submit" class="flex w-full h-fit bg-gradient-to-b from-green-500 via-green-600 to-green-700 justify-center items-center text-center text-2xl rounded-2xl font-sans"> SUBMIT </button>
+                    </form>
+                {:else if getData}
+                    <MessageBox title="Berhasil" type="info" buttonType="ok" 
+                        handleResult={
+                            () => {
+                                if (!pengaturanAturan2[0] && pengaturanAturan2[1]) {
+                                    pengaturanClick2();
+                                    addAccount = false;
+                                    forAccount = 0;
+                                    return;
+                                }
+                                getData = false;    
+                            }
+                        }
+                    >
+                        <div class="w-full h-fit flex justify-between items-center object-center text-center">
+                            <p class=" font-bold text-amber-300">Sudah berhasil tambah akun</p>
+                        </div>
+                    </MessageBox>
+                {/if}
+            </ListingComp>
+        {:else if subMenu.pengaturan == 2 && menuClick[4]}
+            <ListingComp disableAddButton={false} editable={false} items={[]} ifItems={true} ifOther={false} itemEdit={false} title={subMenu.titleSubMenu}>
+
+            </ListingComp>
+        {:else if subMenu.pengaturan == 2 && menuClick[5]}
+            <ListingComp disableAddButton={false} editable={false} items={[]} ifItems={true} ifOther={false} itemEdit={false} title={subMenu.titleSubMenu}>
+
+            </ListingComp>
+        {:else}
+            <ListingComp disableAddButton={true} editable={false} items={pengaturanItems} ifItems={pengaturanAturan[0]} ifOther={pengaturanAturan[1]} title={subMenu.titleSubMenu} itemEdit={itemEdit} selectedItemsID = {subMenu.currentItemEditID}></ListingComp>
+        {/if}
     {:else if subMenu.pengaturan < 0 && subMenu.laporan < 0}
-        {#if lihatRoom}
+        {#if menuClick[0]}
         <ListingComp editable={false} items={[]} ifItems={false} ifOther={true} title="Room" itemEdit={false} >
 
         </ListingComp>
-        {:else if lihatMasalah}
+        {:else if menuClick[1]}
         <ListingComp editable={false} items={[]} ifItems={false} ifOther={true} title="Masalah" itemEdit={false} >
             
         </ListingComp>
-        {:else if lihatAbsensi}
+        {:else if menuClick[2]}
         <ListingComp editable={false} items={[]} ifItems={false} ifOther={true} title="Absensi" itemEdit={false} >
             
         </ListingComp>

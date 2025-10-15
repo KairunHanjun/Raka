@@ -24,7 +24,7 @@
 </script>
 
 <div class="bg-slate-200 p-8 md:p-12 rounded-3xl shadow-lg w-full max-w-md border border-slate-300">
-  <form onsubmit={handleLogin} class="flex flex-col gap-6" use:enhance>
+  <form onsubmit={handleLogin} class="flex flex-col gap-6" method="post" use:enhance>
     
     <!-- Username Input -->
     <div>
@@ -36,7 +36,8 @@
         id="username"
         bind:value={dataLogin.username}
         class="w-full px-4 py-3 rounded-2xl border-2 border-slate-300 bg-white focus:outline-none focus:ring-4 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200"
-      />
+        required
+        />
     </div>
 
     <!-- Password Input -->
@@ -49,7 +50,8 @@
         id="password"
         bind:value={dataLogin.password}
         class="w-full px-4 py-3 rounded-2xl border-2 border-slate-300 bg-white focus:outline-none focus:ring-4 focus:ring-blue-300 focus:border-blue-500 transition-all duration-200"
-      />
+        required
+        />
     </div>
 
     <!-- Action Buttons -->

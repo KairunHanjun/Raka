@@ -1,12 +1,13 @@
 <script lang="ts">
-	import type { Snippet } from "svelte";
+	import { type Snippet } from "svelte";
+
 
   // Tipe notifikasi visual
     type NotificationType = 'info' | 'warning' | 'danger';
   // Tipe set tombol yang akan ditampilkan
     type ButtonSetType = 'ok' | 'yesno' | 'subcancel';
   // Tipe hasil yang akan dikembalikan, diekspor agar bisa digunakan di parent
-  export type DialogResult = 'ok' | 'yes' | 'no' | 'submit' | 'cancel';
+    type DialogResult = 'ok' | 'yes' | 'no' | 'submit' | 'cancel';
 
   // Mendefinisikan props komponen, sekarang menggunakan 'children'
   let { 
@@ -20,7 +21,7 @@
     children?: Snippet; // Mengganti 'message' dengan 'children'
     type?: NotificationType;
     buttonType?: ButtonSetType;
-    handleResult?: DialogResult;
+    handleResult?: ((type: DialogResult) => void) | (() => void) | void;
   }>();
 
   // Menentukan kelas warna secara dinamis
@@ -56,45 +57,49 @@
 </script>
 
 <!-- Kontainer utama kartu notifikasi -->
-<div class="bg-slate-800 w-full max-w-md rounded-3xl shadow-2xl border border-slate-700 overflow-hidden">
-  
-  <!-- Header dengan warna dinamis -->
-  <header class={`p-4 text-white text-3xl font-bold ${colorClasses.header}`}>
-    {title}
-  </header>
-  
-  <!-- Konten utama dengan pesan dan tombol -->
-  <main class="p-8 text-center">
-    <!-- Konten sekarang dirender dari children -->
-    <div class="text-white text-2xl min-h-[6rem] flex flex-col items-center justify-center">
-      {#if children}
-        {@render children()}
-      {/if}
+<div class="fixed top-0 left-0 w-screen h-screen flex 
+                items-center justify-center">
+  <div class="">
+    <div class="bg-slate-800 w-full max-w-sm rounded-3xl shadow-2xl border border-slate-700 overflow-hidden">
+      
+      <!-- Header dengan warna dinamis -->
+      <header class={`p-4 text-white text-3xl font-bold ${colorClasses.header}`}>
+        {title}
+      </header>
+      
+      <!-- Konten utama dengan pesan dan tombol -->
+      <main class="p-8 text-center">
+        <!-- Konten sekarang dirender dari children -->
+        <div class="text-white text-2xl min-h-[6rem] flex flex-col items-center justify-center">
+          {#if children}
+            {@render children()}
+          {/if}
+        </div>
+        
+        <!-- Kontainer untuk tombol-tombol -->
+        <div class="mt-6 flex justify-center gap-4">
+          <!-- Menampilkan tombol berdasarkan buttonType -->
+          {#if buttonType === 'ok'}
+            <button onclick={() => {handleResult('ok'); }} class={`${baseButtonClass} max-w-[200px] ${colorClasses.button}`}>
+              OK
+            </button>
+          {:else if buttonType === 'yesno'}
+            <button onclick={() => {handleResult('no'); }} class={`${baseButtonClass} bg-slate-500 hover:bg-slate-600 focus:ring-slate-400`}>
+              No
+            </button>
+            <button onclick={() => {handleResult('yes'); }} class={`${baseButtonClass} ${colorClasses.button}`}>
+              Yes
+            </button>
+          {:else if buttonType === 'subcancel'}
+            <button onclick={() => {handleResult('cancel'); }} class={`${baseButtonClass} bg-slate-500 hover:bg-slate-600 focus:ring-slate-400`}>
+              Cancel
+            </button>
+            <button onclick={() => {handleResult('submit'); }} class={`${baseButtonClass} ${colorClasses.button}`}>
+              Submit
+            </button>
+          {/if}
+        </div>
+      </main>
     </div>
-    
-    <!-- Kontainer untuk tombol-tombol -->
-    <div class="mt-6 flex justify-center gap-4">
-      <!-- Menampilkan tombol berdasarkan buttonType -->
-      {#if buttonType === 'ok'}
-        <button onclick={() => handleResult('ok')} class={`${baseButtonClass} max-w-[200px] ${colorClasses.button}`}>
-          OK
-        </button>
-      {:else if buttonType === 'yesno'}
-        <button onclick={() => handleResult('no')} class={`${baseButtonClass} bg-slate-500 hover:bg-slate-600 focus:ring-slate-400`}>
-          No
-        </button>
-        <button onclick={() => handleResult('yes')} class={`${baseButtonClass} ${colorClasses.button}`}>
-          Yes
-        </button>
-      {:else if buttonType === 'subcancel'}
-        <button onclick={() => handleResult('cancel')} class={`${baseButtonClass} bg-slate-500 hover:bg-slate-600 focus:ring-slate-400`}>
-          Cancel
-        </button>
-        <button onclick={() => handleResult('submit')} class={`${baseButtonClass} ${colorClasses.button}`}>
-          Submit
-        </button>
-      {/if}
-    </div>
-  </main>
-
+  </div>
 </div>

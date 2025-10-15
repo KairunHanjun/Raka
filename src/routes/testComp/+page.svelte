@@ -1,5 +1,4 @@
 <script lang='ts'>
-	import { createRawSnippet, type Snippet } from "svelte";
 	import ActionCard from "$lib/comp/actionCard.svelte";
 	import Header from "$lib/comp/header.svelte";
 	import ListingComp from "$lib/comp/listingComp.svelte";
@@ -10,22 +9,27 @@
   let buttonText = ["Front Office", "House Keeping", "Teknisi", "Host"]
   let selected = $state("Loading");
   let testChangeable = 0;
+  let dialog: any;
   type UnitItem = {
     id: number | string;
     name: string;
     name2: string;
     event: void | (() => {}) | (() => void) | any;
+    editEvent: void | (() => {}) | (() => void) | any;
   };
 
+  let showThisDialog = $state(false);
   const items: UnitItem[] = [{
     id: 0,
     name: 'QB - 02/12A',
     name2: '',
-    event: () => {}}]
+    event: () => {},
+    editEvent: () => {}
+  }
+  ]
 
   let object = $state({back: false})
 
-  let DialogResult;
 </script>
 <form name="testForm" class="text-white">
   <p>Choose to test:</p>
@@ -60,7 +64,7 @@
 {:else if selected === "loginForm"}
   <div class=" text-white">
     {#if object.back} 
-      <LoginForm {object}/>
+      <LoginForm />
       <p>You now login</p>
     {:else}
       <button onclick={() => {
@@ -117,7 +121,17 @@
 {:else if selected == "headerCuy"}
 <Header />
 {:else if selected == "messageBox"}
-<MessageBox bind:this={DialogResult} title="Hello World" type="info" buttonType="yesno">
-  <p class="">Are you sure want to quit?</p>
-</MessageBox>
+  {#if showThisDialog}
+    <MessageBox title="Hello World" type="info" buttonType="yesno" handleResult={(thisDialogResult: any) => {
+      const userChoice = thisDialogResult.detail.result;
+      console.log(userChoice)
+      showThisDialog = false;
+    }}>
+      <p class="">Are you sure want to quit?</p>
+    </MessageBox>
+  {/if}
+<button onclick={() => {
+  console.log(showThisDialog)
+  showThisDialog = true;
+}} class="text-white w-fit h-fit rounded-2xl bg-amber-600">Click me to show</button>
 {/if}

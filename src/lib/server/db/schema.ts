@@ -11,7 +11,7 @@ export const accountTypeEnum = pgEnum('account_type', ['FO', 'HK', 'T', 'H']);
  */
 export const accounts = pgTable('accounts', {
 	// id: An auto-incrementing integer that serves as the primary key.
-	id: serial('id').primaryKey(),
+	id: text('id').unique().primaryKey(),
 	// accountType: The type of the account, constrained by the values in accountTypeEnum.
 	// It defaults to 'user' if not specified.
 	accountType: accountTypeEnum('account_type').notNull(),

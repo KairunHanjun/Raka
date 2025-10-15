@@ -53,7 +53,7 @@
     w-full max-w-md text-white
     bg-gradient-to-b from-blue-600 to-indigo-800
     rounded-b-[9rem] shadow-2xl
-    p-6 flex flex-col z-100
+    p-6 flex flex-col
   "
 >
   <!-- Header: Tombol kembali dan tanggal -->

@@ -5,6 +5,7 @@ import { env } from '$env/dynamic/private';
 
 if (!env.DATABASE_URL_DEV) throw new Error('DATABASE_URL is not set');
 
+
 const client = postgres(env.DATABASE_URL_DEV);
 
 export const db = drizzle(client, { schema });

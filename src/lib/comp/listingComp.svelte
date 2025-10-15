@@ -1,6 +1,5 @@
     <script lang="ts">
 	import type { Snippet } from "svelte";
-  import { createRawSnippet } from "svelte";
 
   /**
    * Tipe data untuk setiap item unit.
@@ -10,6 +9,7 @@
     name: string;
     name2: string;
     event: void | (() => {}) | (() => void) | any;
+    editEvent: void | (() => {}) | (() => void) | any;
   };
 
 
@@ -17,8 +17,7 @@
   let {
     title = 'Default',
     items = {id: 1, name: 'default', name2: '', event: (() => {})},
-    mainButton = () => {},
-    edit = (itemsId: any) => {},
+    onclick: mainButton = () => {},
     editable = false,
     ifItems = false,
     ifOther = false,
@@ -29,8 +28,8 @@
   } = $props<{
     title?: String;
     items?: UnitItem[];
-    mainButton?: void | (() => {}) | (() => void);
-    edit?: void | (() => {}) | (() => void) ;
+    onclick?: void | (() => {}) | (() => void);
+    edit?: void | ((itemsId: any) => {}) | ((itemsId: any) => void) ;
     editable?: boolean;
     ifItems: boolean;
     ifOther: boolean;
@@ -42,7 +41,7 @@
 </script>
 
 <!-- Kontainer Utama -->
-<div class="bg-slate-800 w-full max-w rounded-3xl p-6 shadow-2xl border border-slate-700 flex flex-col h-[40rem]">
+<div class="bg-slate-800 w-full max-w-sm max-w rounded-3xl p-6 shadow-2xl border border-slate-700 flex flex-col h-[40rem]">
   
   <!-- Judul Form -->
   <h1 class="text-white text-4xl font-bold text-center mb-6">
@@ -57,36 +56,52 @@
     {#if ifItems && !ifOther && !itemEdit}
         {#if items && !itemEdit}
           {#each items as item (item.id)}
-          
               <!-- Item dalam Daftar -->
               {#if editable}
-                <div class="bg-blue-600 text-white flex items-center justify-center-safe p-4 rounded-2xl font-semibold text-lg">
-                <span>{item.name}</span>
-                <button 
-                    onclick={() => edit}
-                    class="hover:bg-blue-700 p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-white"
-                    aria-label="Edit {item.name}"
-                >
-                    <!-- Ikon Pengaturan (SVG) -->
-                    <svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="48" height="48">
-                    <path d="M0 0 C5.80142431 3.68167312 8.86857617 8.46968018 11 15 C12.13364646 22.57078681 11.38724944 29.60294915 7 36 C2.14284265 41.39454498 -2.38188013 44.51670839 -9.6875 45.28125 C-17.18157036 45.66360053 -22.90029895 44.49337408 -29 40 C-34.34885904 34.69552983 -36.61820937 29.12333883 -37.3125 21.625 C-36.66025853 14.05899896 -34.34302435 8.28700991 -29.0859375 2.73046875 C-20.36483673 -4.50445193 -9.9742556 -4.5607191 0 0 Z " fill="#F44437" transform="translate(37,3)"/>
-                    <path d="M0 0 C2.86697492 1.28519565 4.97607712 2.57129254 7 5 C7 5.66 7 6.32 7 7 C10.96 3.535 10.96 3.535 15 0 C16.65 1.32 18.3 2.64 20 4 C18.70700306 6.88437779 17.34058637 8.87219421 15 11 C16.01889939 13.27292941 16.80902631 14.83024561 18.6875 16.5 C20 18 20 18 19.9375 20.0625 C18.73944098 22.53848865 17.51570636 23.02617818 15 24 C14.2575 23.154375 13.515 22.30875 12.75 21.4375 C10.35481767 18.79043429 10.35481767 18.79043429 7.9375 18.9375 C5.50607372 20.2708628 3.85098018 21.95070051 2 24 C-1.16115776 22.63016497 -1.9927092 22.0109362 -4 19 C-2.02 17.02 -0.04 15.04 2 13 C0.47291037 9.56404834 -1.59927045 6.88087546 -4 4 C-2.68 2.68 -1.36 1.36 0 0 Z " fill="#FEF8F8" transform="translate(16,12)"/>
-                    </svg>
-                </button>
+                <!-- svelte-ignore a11y_click_events_have_key_events -->
+                <!-- svelte-ignore a11y_no_static_element_interactions -->
+                <div class={`
+                w-full text-white flex justify-center text-3xl font-bold p-5 rounded-2xl
+                    bg-gradient-to-b from-blue-500 to-blue-700
+                    shadow-md hover:shadow-lg
+                    active:translate-y-0.5
+                    transition-all duration-200 ease-in-out
+                    focus:outline-none focus:ring-4 focus:ring-blue-400
+                `} onclick={item.event}>
+                  <div class="flex flex-col w-fit h-fit justify-center items-center text-center">
+                    <p class=" font-bold text-[2rem] text-center">{item.name}</p>
+                    {#if item.name2 != ""}
+                      <p class=" text-[1rem] text-center">{item.name2}</p>
+                    {/if}
+                  </div>
+                  <button 
+                      onclick={item.editEvent}
+                      class="hover:bg-blue-700 p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-white z-255"
+                      aria-label="Edit {item.name}"
+                  >
+                      <!-- Ikon Pengaturan (SVG) -->
+                      <svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="48" height="48">
+                      <path d="M0 0 C5.80142431 3.68167312 8.86857617 8.46968018 11 15 C12.13364646 22.57078681 11.38724944 29.60294915 7 36 C2.14284265 41.39454498 -2.38188013 44.51670839 -9.6875 45.28125 C-17.18157036 45.66360053 -22.90029895 44.49337408 -29 40 C-34.34885904 34.69552983 -36.61820937 29.12333883 -37.3125 21.625 C-36.66025853 14.05899896 -34.34302435 8.28700991 -29.0859375 2.73046875 C-20.36483673 -4.50445193 -9.9742556 -4.5607191 0 0 Z " fill="#F44437" transform="translate(37,3)"/>
+                      <path d="M0 0 C2.86697492 1.28519565 4.97607712 2.57129254 7 5 C7 5.66 7 6.32 7 7 C10.96 3.535 10.96 3.535 15 0 C16.65 1.32 18.3 2.64 20 4 C18.70700306 6.88437779 17.34058637 8.87219421 15 11 C16.01889939 13.27292941 16.80902631 14.83024561 18.6875 16.5 C20 18 20 18 19.9375 20.0625 C18.73944098 22.53848865 17.51570636 23.02617818 15 24 C14.2575 23.154375 13.515 22.30875 12.75 21.4375 C10.35481767 18.79043429 10.35481767 18.79043429 7.9375 18.9375 C5.50607372 20.2708628 3.85098018 21.95070051 2 24 C-1.16115776 22.63016497 -1.9927092 22.0109362 -4 19 C-2.02 17.02 -0.04 15.04 2 13 C0.47291037 9.56404834 -1.59927045 6.88087546 -4 4 C-2.68 2.68 -1.36 1.36 0 0 Z " fill="#FEF8F8" transform="translate(16,12)"/>
+                      </svg>
+                  </button>
                 </div>
               {:else}
                 <button class="
-                w-full text-white text-3xl font-bold p-5 rounded-2xl
-                  bg-gradient-to-b from-blue-500 to-blue-700
-                  shadow-md hover:shadow-lg
-                  active:translate-y-0.5
-                  transition-all duration-200 ease-in-out
-                  focus:outline-none focus:ring-4 focus:ring-blue-400
-                "
-                onclick={item.event}
-              >
-                {item.name}
-              </button>
+                  w-full text-white flex-col text-3xl font-bold p-5 rounded-2xl
+                    bg-gradient-to-b from-blue-500 to-blue-700
+                    shadow-md hover:shadow-lg
+                    active:translate-y-0.5
+                    transition-all duration-200 ease-in-out
+                    focus:outline-none focus:ring-4 focus:ring-blue-400
+                  "
+                  onclick={item.event}
+                >
+                  <p class=" font-bold text-[2rem] text-center">{item.name}</p>
+                  {#if item.name2 != ""}
+                    <p class=" text-[1rem] text-center">{item.name2}</p>
+                  {/if}
+                </button>
               {/if}
           {/each}
         {:else}
