@@ -259,7 +259,17 @@
                             method: 'POST',
                             body: formData
                         });
-                        //TODO: Fix cannot delete the second after adding an account
+                        if(!response.ok){
+                            serverResponseFetch = {
+                                dataAkun: undefined!,
+                                success: false,
+                                message: "Cannot get the data, something went wrong",
+                                error: "Fetch data from server"
+                            };
+                            editData = false;
+                            return;
+                        }
+                        const result = await response.json();
                         const parseResult = JSON.parse(result.data);
                         serverResponseFetch = {
                             dataAkun: parseResult[1],
