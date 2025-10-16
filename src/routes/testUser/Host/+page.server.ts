@@ -186,13 +186,16 @@ export const actions: Actions = {
 		}
 	},
 	deleteAccount: async (event) => {
-		console.log("Delete Data Start...");
 		const formData: FormData = await event.request.formData();
 		const id: string = (formData.get("id"))?.toString() ?? '';
-
+		let dataAkun;
 		try {
 			await db.delete(accounts).where(eq(accounts.id, (id as string)));
-				
+			dataAkun = await db.select({
+				id: accounts.id,
+				username: accounts.username,
+				accountType: accounts.accountType
+			}).from(accounts);
 		} catch (error) {
 			console.log("Delete Data Error...");
 			return fail(422, {
@@ -201,8 +204,8 @@ export const actions: Actions = {
 				error: (error instanceof Error) ? (error as Error).message : "Data cannot be changed"
 			})
 		}
-		console.log("Delete Data End...");
 		return {
+			dataAkun: (dataAkun) ? dataAkun : null,
 			success: true,
 			message: "Data berhasil dihapus",
 			error: null

@@ -131,6 +131,7 @@
     const pengaturanAturan2: Array<boolean> = $state([true, false]);
     
     interface ServerResponseFetch {
+        dataAkun?: Array<{ id: string; username: string; accountType: "FO" | "HK" | "T" | "H"; }>;
         success?: boolean;
         message?: string;
         error?: string;
@@ -176,6 +177,7 @@
                         editAkunId = data.id;
                         forAccount = -1;
                         editData = true;
+                        getData = false;
                     })
                 })
             })
@@ -184,7 +186,7 @@
 </script>
 
 <!-- <svelte:window onbeforeunload={beforeUnload} /> -->
-
+<!-- HERE THE MSG BOX FOR ERROR, LOGOUT, DELETE CONFIRMATION -->
 {#if serverResponseFetch?.success}
     <MessageBox title="Berhasil dihapus" type="info" buttonType="ok" handleResult={
         async () => {
@@ -194,6 +196,7 @@
                 addAccount = false;
                 forAccount = 0;
                 editData = false;
+                serverResponseFetch = undefined!;
                 return;
             }
         }
@@ -213,6 +216,7 @@
                     addAccount = false;
                     forAccount = 0;
                     editData = false;
+                    serverResponseFetch = undefined!;
                     return;
                 }
             }
@@ -242,7 +246,7 @@
             {/if}
         </div>
     </MessageBox>
-{:else if editData}
+{:else if editData && !getData}
     <MessageBox title="Hapus Akun" type="warning" buttonType='yesno' handleResult={
         async (result: any) => {
             if(result){
@@ -255,11 +259,38 @@
                             method: 'POST',
                             body: formData
                         });
-                        const result = await response.json();
-                        //TODO: The data keep doing weird non-interface thing
                         //TODO: Fix cannot delete the second after adding an account
-                        serverResponseFetch = result;
-                    }catch (error) {}
+                        const parseResult = JSON.parse(result.data);
+                        serverResponseFetch = {
+                            dataAkun: parseResult[1],
+                            success: parseResult[2],
+                            error: parseResult[4],
+                            message: parseResult[3]
+                        }
+                        if(serverResponseFetch.dataAkun){
+                            emptiedArray(userItems);
+                            serverResponseFetch.dataAkun?.forEach((data) => {
+                                userItems.push({
+                                    id: data.id,
+                                    name: data.username.toLocaleUpperCase(),
+                                    name2: accountTypeMap[data.accountType] || 'Tidak Dikenali',
+                                    event: (() => {
+                                        pengaturanClick2();
+                                        editAkun = data.username;
+                                        editAkunId = data.id;
+                                    }),
+                                    editEvent: (() => {
+                                        editAkun = data.username;
+                                        editAkunId = data.id;
+                                        forAccount = -1;
+                                        editData = true;
+                                        getData = false;
+                                    })
+                                })
+                            })
+                        }
+                        
+                    }catch (error) {console.log(error);}
                 }
             }
             editData = false;
@@ -268,7 +299,7 @@
     <p class=" text-amber-300">Yakin ingin hapus akun ini? {editAkun}</p>
     </MessageBox>
 {/if}
-
+<!-- END THE DELETE ACCOUNT -->
 
 <div class="h-fit w-screen flex flex-col justify-center items-center gap-4">
     <Header onclick={() => {
@@ -408,11 +439,11 @@
                 </div>
             </section>
         </ListingComp>
+    <!-- HERE LAY THE ADD AND EDIT ACCOUNT -->
     {:else if subMenu.pengaturan >= 1 && subMenu.laporan === 0}
         {#if subMenu.pengaturan == 2 && menuClick[3]}
             <ListingComp disableAddButton={false} editable={true} items={userItems} ifItems={pengaturanAturan2[0]} ifOther={false} itemEdit={pengaturanAturan2[1]} title={subMenu.titleSubMenu} selectedItemsID={forAccount} onclick={() => {
-                addAccount = true;
-                //TODO: Fix this 
+                addAccount = true; 
                 pengaturanClick2();
                 forAccount = 1 ;
             }}>
@@ -435,6 +466,8 @@
                                         editAkun = data.username;
                                         editAkunId = data.id;
                                         forAccount = -1;
+                                        editData = true;
+                                        getData = false;
                                     })
                                 })
                             });
@@ -480,16 +513,20 @@
                     </MessageBox>
                 {/if}
             </ListingComp>
+        <!-- HERE LAY THE ADD UNIT -->
         {:else if subMenu.pengaturan == 2 && menuClick[4]}
             <ListingComp disableAddButton={false} editable={false} items={[]} ifItems={true} ifOther={false} itemEdit={false} title={subMenu.titleSubMenu}>
 
             </ListingComp>
+        <!-- HERE LAY THE ADD AGENT -->
         {:else if subMenu.pengaturan == 2 && menuClick[5]}
             <ListingComp disableAddButton={false} editable={false} items={[]} ifItems={true} ifOther={false} itemEdit={false} title={subMenu.titleSubMenu}>
 
             </ListingComp>
         {:else}
-            <ListingComp disableAddButton={true} editable={false} items={pengaturanItems} ifItems={pengaturanAturan[0]} ifOther={pengaturanAturan[1]} title={subMenu.titleSubMenu} itemEdit={itemEdit} selectedItemsID = {subMenu.currentItemEditID}></ListingComp>
+            <ListingComp disableAddButton={true} editable={false} items={pengaturanItems} ifItems={pengaturanAturan[0]} ifOther={pengaturanAturan[1]} title={subMenu.titleSubMenu} itemEdit={itemEdit} selectedItemsID = {subMenu.currentItemEditID}>
+
+            </ListingComp>
         {/if}
     {:else if subMenu.pengaturan < 0 && subMenu.laporan < 0}
         {#if menuClick[0]}
