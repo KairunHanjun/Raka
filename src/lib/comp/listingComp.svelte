@@ -51,7 +51,7 @@
   <!-- Kontainer Daftar dengan Scroll -->
   <div class=" flex-grow {ifOther || itemEdit ? 'bg-amber-100' : 'bg-slate-900'} rounded-2xl p-3 space-y-3 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-900">
     {#if ifOther && !ifItems && children && !itemEdit}
-        {@render children()}
+        {@render children?.()}
     {/if}
     {#if ifItems && !ifOther && !itemEdit}
         {#if items && !itemEdit}
@@ -120,7 +120,7 @@
         </div>
       {/if}
       {:else if itemEdit && selectedItemsID >= 0}
-        {@render children()}
+        {@render children?.()}
     {/if}
   </div>
 </div>

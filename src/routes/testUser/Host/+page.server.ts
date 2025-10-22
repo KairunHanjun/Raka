@@ -6,32 +6,34 @@ import { hash } from "argon2";
 import { generateIdFromEntropySize } from "lucia";
 import { db } from "$lib/server/db";
 import { createSession, generateSessionToken, setSessionTokenCookie } from "$lib/server/auth";
-import { accounts } from "$lib/server/db/schema";
-import { eq } from "drizzle-orm/sql/expressions/conditions";
+import { accounts, agents, units } from "$lib/server/db/schema";
+import { eq, ne } from "drizzle-orm/sql/expressions/conditions";
+
+function validateSession(){
+
+}
 
 export const load: PageServerLoad = async ({ }) => {
 	//TODO: Validate Session User
+	//TODO: get accounts&agent id from user session and put it in the createdByWho
 	try {
-	
-	//TODO: Get Account
 	const dataAkun = await db.select({
 		id: accounts.id,
 		username: accounts.username,
 		accountType: accounts.accountType
-	}).from(accounts);
-	console.log(dataAkun);
-	//TODO: Get Unit
-
-	//TODO: Get Agent
-
+	}).from(accounts).where(ne(accounts.accountType, 'H')/*, eq(accounts.createdByWho, )*/);
+	//Get Unit
+	const dataUnits = await db.select().from(units);
+	//Get Agent
+	const dataAgents = await db.select().from(agents)/*.where(/*, eq(accounts.createdByWho, ))*/;
 	//TODO: Get Masalah
 
 	//TODO: Get Absensi
 
-	//TODO: Get Room
-
 		return {
-			dataAkun
+			dataAkun,
+			dataUnits,
+			dataAgents
 		}
 	} catch (error) {
 		console.log((error as Error).cause || '');
@@ -45,10 +47,60 @@ export const load: PageServerLoad = async ({ }) => {
 //TODO: Validate Session User First for every request from server
 export const actions: Actions = {
 	addAgent: async (event) => {
-
+		const fromData: FormData = await event.request.formData();
+		const AgentName: string = (fromData.get("AgentName"))?.toString() ?? '';
+		const EmailAgent: string = (fromData.get("EmailAgent"))?.toString() ?? '';
+		const PhoneAgent: string = (fromData.get("PhoneAgent"))?.toString() ?? '';
+		let dataAgents;
+		try {
+			await db.insert(agents).values({
+				nameAgent: AgentName as string,
+				email: EmailAgent as string,
+				phoneNumber: PhoneAgent as string,
+				//TODO: Add created by who if login is added
+				createdByWho: ''
+			});
+			dataAgents = await db.select().from(agents);
+		} catch (error) {
+			return fail(422, {
+				description: "Unit telah terdaftar pada database",
+				error: (error instanceof Error) ? (error as Error).message : "Unit already taken"
+			})
+		}
+		return {
+			dataAgents: (dataAgents) ? dataAgents : null,
+			success: true,
+			message: "Data berhasil dihapus",
+			error: null
+		}
 	},
 	addUnit: async (event) => {
-
+		const fromData: FormData = await event.request.formData();
+		const UnitName: string = (fromData.get("UnitName"))?.toString() ?? '';
+		const Status: string = (fromData.get("Status"))?.toString() ?? '';
+		const FromTime: string = (fromData.get("from-time"))?.toString() ?? '';
+		const ToTime: string = (fromData.get("to-time"))?.toString() ?? '';
+		let dataUnit;
+		try {
+			await db.insert(units).values({
+				nameUnit: UnitName as string,
+				unitState: Status as any,
+				fromTime: FromTime as string,
+				toTime: ToTime as string
+			});
+			dataUnit = await db.select().from(units);
+		} catch (error) {
+			return fail(422, {
+				description: "Unit telah terdaftar pada database",
+				error: (error instanceof Error) ? (error as Error).message : "Unit already taken"
+			})
+		}
+		return {
+			dataUnits: (dataUnit) ? dataUnit : null,
+			success: true,
+			message: "Data berhasil dihapus",
+			error: null
+		}
 	},
 	addAccount: async (event) => {
 		const formData: FormData = await event.request.formData();
@@ -87,8 +139,8 @@ export const actions: Actions = {
 		});
 
 
-		// TODO: check if username is already used
 		try {
+			//console.log("Trying to insert data...");
 			await db.insert(accounts).values({
 				id: userId as string,
 				username: username as string,
@@ -96,9 +148,12 @@ export const actions: Actions = {
 				accountType: role as any,
 				passwordHash: passwordHash as string,
 				phoneNumber: telp as string ,
-				createdAt: new Date(createdAt)
+				createdAt: new Date(createdAt),
+				//TODO: Add created by who if login is added
+				createdByWho: ''
 			});
 		} catch (error) {
+			//console.log("Error: " + (error as Error).message);
 			return fail(422, {
 				description: "Nama telah terdaftar pada database",
 				error: (error instanceof Error) ? (error as Error).message : "Username already taken"
@@ -111,10 +166,68 @@ export const actions: Actions = {
 			id: accounts.id,
 			username: accounts.username,
 			accountType: accounts.accountType
-		}).from(accounts);
+		}).from(accounts).where(ne(accounts.accountType, 'H'));
+		//console.log("Done: " + dataAkun);
 		return {
 			dataAkun,
 			horay: true
+		}
+	},
+	editUnit: async (event) => {
+		const fromData: FormData = await event.request.formData();
+		const UnitName: string = (fromData.get("UnitName"))?.toString() ?? '';
+		const Status: string = (fromData.get("Status"))?.toString() ?? '';
+		const FromTime: string = (fromData.get("from-time"))?.toString() ?? '';
+		const ToTime: string = (fromData.get("to-time"))?.toString() ?? '';
+		let dataUnit;
+		try {
+			await db.update(units).set({
+				nameUnit: UnitName as string,
+				unitState: Status as any,
+				fromTime: FromTime as string,
+				toTime: ToTime as string
+			}).where(eq(units.nameUnit, (UnitName as string)));
+			dataUnit = await db.select().from(units);
+		} catch (error) {
+			return fail(422, {
+				description: "Unit telah terdaftar pada database",
+				error: (error instanceof Error) ? (error as Error).message : "Unit already taken"
+			})
+		}
+		return {
+			dataUnits: (dataUnit) ? dataUnit : null,
+			success: true,
+			message: "Data berhasil dihapus",
+			error: null
+		}
+	},
+	editAgent: async (event) => {
+		const fromData: FormData = await event.request.formData();
+		const AgentName: string = (fromData.get("AgentName"))?.toString() ?? '';
+		const EmailAgent: string = (fromData.get("EmailAgent"))?.toString() ?? '';
+		const PhoneAgent: string = (fromData.get("PhoneAgent"))?.toString() ?? '';
+		const IdAgent: string = (fromData.get("IdAgent"))?.toString() ?? '';
+		let dataAgents;
+		try {
+			await db.update(agents).set({
+				nameAgent: AgentName as string,
+				email: EmailAgent as string,
+				phoneNumber: PhoneAgent as string,
+				//TODO: Add created by who if login is added
+				createdByWho: ''
+			}).where(eq(agents.id, (IdAgent as string)));
+			dataAgents = await db.select().from(agents);
+		} catch (error) {
+			return fail(422, {
+				description: "Unit telah terdaftar pada database",
+				error: (error instanceof Error) ? (error as Error).message : "Unit already taken"
+			})
+		}
+		return {
+			dataAgents: (dataAgents) ? dataAgents : null,
+			success: true,
+			message: "Data berhasil dihapus",
+			error: null
 		}
 	},
 	editAccount: async (event) => {
@@ -155,7 +268,6 @@ export const actions: Actions = {
 		});
 
 
-		// TODO: check if username is already used
 		try {
 			await db.update(accounts).set({
 				id: userId as string,
@@ -179,10 +291,56 @@ export const actions: Actions = {
 			id: accounts.id,
 			username: accounts.username,
 			accountType: accounts.accountType
-		}).from(accounts);
+		}).from(accounts).where(ne(accounts.accountType, 'H'));
 		return {
 			dataAkun,
 			horay: true
+		}
+	},
+	deleteAgent: async (event) => {
+		const formData: FormData = await event.request.formData();
+		const IdAgent: string = (formData.get("AgentName"))?.toString() ?? '';
+		let dataAgents;
+		try {
+			await db.delete(agents).where(eq(agents.nameAgent, (IdAgent as string)));
+			dataAgents = await db.select().from(agents);
+		} catch (error) {
+			console.log("Delete Data Error...");
+			return fail(422, {
+				dataUnits: undefined!,
+				success: false,
+				message: "Tidak bisa diubah datanya....",
+				error: (error instanceof Error) ? (error as Error).message : "Data cannot be changed"
+			})
+		}
+		return {
+			dataAgents: (dataAgents) ? dataAgents : null,
+			success: true,
+			message: "Data berhasil dihapus",
+			error: null
+		}
+	},
+	deleteUnit: async (event) => {
+		const formData: FormData = await event.request.formData();
+		const unitName: string = (formData.get("unitName"))?.toString() ?? '';
+		let dataUnit;
+		try {
+			await db.delete(units).where(eq(units.nameUnit, (unitName as string)));
+			dataUnit = await db.select().from(units);
+		} catch (error) {
+			console.log("Delete Data Error...");
+			return fail(422, {
+				dataUnits: undefined!,
+				success: false,
+				message: "Tidak bisa diubah datanya....",
+				error: (error instanceof Error) ? (error as Error).message : "Data cannot be changed"
+			})
+		}
+		return {
+			dataUnits: (dataUnit) ? dataUnit : null,
+			success: true,
+			message: "Data berhasil dihapus",
+			error: null
 		}
 	},
 	deleteAccount: async (event) => {
@@ -195,7 +353,7 @@ export const actions: Actions = {
 				id: accounts.id,
 				username: accounts.username,
 				accountType: accounts.accountType
-			}).from(accounts);
+			}).from(accounts).where(ne(accounts.accountType, 'H'));
 		} catch (error) {
 			console.log("Delete Data Error...");
 			return fail(422, {

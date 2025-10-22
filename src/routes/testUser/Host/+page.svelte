@@ -1,4 +1,8 @@
+<!-- USE newMsgBox to create a new MessageBox
+to Dissapear that MessageBox Simply undefined the newMsgBox -->
+
 <script lang="ts">
+
 	import { enhance } from "$app/forms";
 	import { invalidateAll } from "$app/navigation";
 	import ActionCard from "$lib/comp/actionCard.svelte";
@@ -94,9 +98,11 @@
                 menuClick[i] = false;
             }
             menuClick[4] = true;
-            //TODO: get unit here in here
+            
         },
-        editEvent: () => {}
+        editEvent: () => {
+
+        }
     },
     {
         id: 2,
@@ -113,13 +119,11 @@
                 menuClick[i] = false;
             }
             menuClick[5] = true;
-            //TODO: get agent in here
         },
         editEvent: () => {}
     }])
 
-    let editAkun: string = $state('');
-    let editAkunId: string = $state('');
+    const edit: Array<string> = $state([]);
     const userItems: UnitItem[] = $state([]);
     interface SubMenu {
         pengaturan: number;
@@ -131,14 +135,128 @@
     const pengaturanAturan2: Array<boolean> = $state([true, false]);
     
     interface ServerResponseFetch {
-        dataAkun?: Array<{ id: string; username: string; accountType: "FO" | "HK" | "T" | "H"; }>;
+        data?: any;
         success?: boolean;
         message?: string;
         error?: string;
     }
-        
+    
+    interface MsgBox {
+        Title?: string;
+        Message?: string;
+        NotificationType?: 'info' | 'warning' | 'danger';
+        ButtonType?: 'ok' | 'yesno' | 'subcancel';
+        Action?: (() => {}) | (() => void) | ((result: any) => void);
+    }
+
     let serverResponseFetch: ServerResponseFetch = $state(undefined!);
 
+
+    /**
+     * {
+        id: 1,
+        name: 'UNIT TEST',
+        name2: '',
+        event: () => {
+            pengaturanClick2();
+            emptiedArray(edit);
+            edit.push("UNIT TEST");
+        },
+        editEvent: () => {
+            emptiedArray(edit);
+            edit.push("UNIT TEST");
+            hapusUnitMsgBox();
+        }
+    }
+     */
+    let unitItems: UnitItem[] = $state([])
+    let agentItems: UnitItem[] = $state([])
+    let ExclusiveButtonType: 'ok' | 'yesno' | 'subcancel' | undefined = 'yesno';
+    function hapusUnitMsgBox(deleteWhat: 'unit' | 'agent'){
+        newMsgBox = {
+                Title: "Hapus "+ deleteWhat +"?",
+                Message: "Apakah kamu yakin untuk hapus " + deleteWhat + "?",
+                NotificationType: 'warning',
+                ButtonType: ExclusiveButtonType,
+                Action: (async (result: any) => {
+                    await invalidateAll();
+                    if(result){
+                        if(result === 'yes'){
+                            ExclusiveButtonType = undefined!;
+                            const formData = new FormData();
+                            formData.append(deleteWhat+'Name', edit[0]);
+                            try{
+                                const fetchRoute = (deleteWhat === 'unit') ? "?/deleteUnit" : "?/deleteAgent";
+                                console.log(fetchRoute);
+                                const response = await fetch(fetchRoute, {
+                                    method: 'POST',
+                                    body: formData
+                                });
+                                if(!response.ok){
+                                    serverResponseFetch = {
+                                        data: undefined!,
+                                        success: false,
+                                        message: "Cannot get the data, something went wrong",
+                                        error: "Fetch data from server"
+                                    };
+                                    newMsgBox = undefined!
+                                    return;
+                                }
+                                const result = await response.json();
+                                const parseResult = JSON.parse(result.data);
+                                serverResponseFetch = {
+                                    data: parseResult[1],
+                                    success: parseResult[2],
+                                    error: parseResult[4],
+                                    message: parseResult[3]
+                                }
+                                if(serverResponseFetch.data){
+                                    emptiedArray((deleteWhat === 'unit') ? unitItems : agentItems);
+                                    serverResponseFetch.data?.forEach((data: any) => {
+                                        if(deleteWhat === 'unit'){
+                                            unitItems.push({
+                                                id: null,
+                                                name: data.nameUnit.toLocaleUpperCase(),
+                                                name2: (data.fromTime + '-' + data.toTime) || 'Tidak Dikenali',
+                                                event: (() => {
+                                                    pengaturanClick2();
+                                                    emptiedArray(edit);
+                                                    edit.push(data.nameUnit);
+                                                }),
+                                                editEvent: (() => {
+                                                    emptiedArray(edit);
+                                                    edit.push(data.nameUnit);
+                                                    hapusUnitMsgBox(deleteWhat);
+                                                })
+                                            })
+                                        }else if(deleteWhat === 'agent'){
+                                            agentItems.push({
+                                                id: data.id,
+                                                name: data.nameAgent.toLocaleUpperCase(),
+                                                name2: data.createdByWho || 'Tidak Dikenali',
+                                                event: (() => {
+                                                    pengaturanClick2();
+                                                    emptiedArray(edit);
+                                                    edit.push(data.nameAgent);
+                                                    edit.push(data.id);
+                                                }),
+                                                editEvent: (() => {
+                                                    emptiedArray(edit);
+                                                    edit.push(data.nameAgent);
+                                                    edit.push(data.id);
+                                                    hapusUnitMsgBox(deleteWhat);
+                                                })
+                                            })
+                                        }
+                                    })
+                                }
+                            }catch (error) {console.log(error);}
+                        }
+                    }
+                    newMsgBox = undefined!
+                })
+            }
+    }
     let addAccount: boolean = $state(false);
     let forAccount: number = $state(0);
     const menuClick: Array<boolean> = $state([false, false, false, false, false, false]);
@@ -155,6 +273,9 @@
             arrayHere.pop();
         }
     }
+
+    let newMsgBox: MsgBox = $state(undefined!);
+    let submiting: boolean = $state(false);
     // IN HERE WE FETCH DATA FROM BACKEND OR SEND IT
     let { data, form }: PageProps = $props();
     let getData: any = $state(false);
@@ -169,21 +290,69 @@
                     name2: accountTypeMap[data.accountType] || 'Tidak Dikenali',
                     event: (() => {
                         pengaturanClick2();
-                        editAkun = data.username;
-                        editAkunId = data.id;
+                        emptiedArray(edit);
+                        edit.push(data.username);
+                        edit.push(data.id)
                     }),
                     editEvent: (() => {
-                        editAkun = data.username;
-                        editAkunId = data.id;
+                        emptiedArray(edit);
+                        edit.push(data.username);
+                        edit.push(data.id)
                         forAccount = -1;
                         editData = true;
                         getData = false;
                     })
                 })
             })
+            data.dataUnits?.forEach((data) => {
+                unitItems.push({
+                    id: '',
+                    name: data.nameUnit.toLocaleUpperCase(),
+                    name2: (data.fromTime && data.toTime) ? data.fromTime + " - " + data.toTime : null,
+                    event: (() => {
+                        pengaturanClick2();
+                        emptiedArray(edit);
+                        edit.push(data.nameUnit);
+                        
+                    }),
+                    editEvent: (() => {
+                        emptiedArray(edit);
+                        edit.push(data.nameUnit);
+                        hapusUnitMsgBox('unit');
+                    })
+                })
+            })
+            data.dataAgents?.forEach(data => {
+                agentItems.push({
+                    id: data.id,
+                    name: data.nameAgent.toLocaleUpperCase(),
+                    name2: data.createdByWho,
+                    event: (() => {
+                        pengaturanClick2();
+                        emptiedArray(edit);
+                        edit.push(data.nameAgent);
+                        edit.push(data.id);
+                        
+                    }),
+                    editEvent: (() => {
+                        emptiedArray(edit);
+                        edit.push(data.nameAgent);
+                        edit.push(data.id);
+                        hapusUnitMsgBox('unit');
+                    })
+                });
+            });
         }
     }
 </script>
+
+{#if newMsgBox}
+    <MessageBox title={newMsgBox?.Title} type={newMsgBox.NotificationType} buttonType={newMsgBox.ButtonType} handleResult={newMsgBox.Action}>
+        <div class="w-full h-fit flex flex-col justify-between items-center object-center text-center">
+            <p class=" text-amber-300">{newMsgBox?.Message}</p>
+        </div>
+    </MessageBox>
+{/if}
 
 <!-- <svelte:window onbeforeunload={beforeUnload} /> -->
 <!-- HERE THE MSG BOX FOR ERROR, LOGOUT, DELETE CONFIRMATION -->
@@ -232,6 +401,7 @@
 {#if (form?.error && getData) || (data?.error && getData)}
     <MessageBox title="Masalah Terjadi!" type="warning" buttonType="ok" handleResult={
         () => {
+            submiting = false;
             getData = false;
         }
     }>
@@ -252,8 +422,8 @@
             if(result){
                 if(result === 'yes'){
                     const formData = new FormData();
-                    formData.append('id', editAkunId);
-                    formData.append('username', editAkun);
+                    formData.append('id', edit[1]);
+                    formData.append('username', edit[0]);
                     try{
                         const response = await fetch('?/deleteAccount', {
                             method: 'POST',
@@ -261,7 +431,7 @@
                         });
                         if(!response.ok){
                             serverResponseFetch = {
-                                dataAkun: undefined!,
+                                data: undefined!,
                                 success: false,
                                 message: "Cannot get the data, something went wrong",
                                 error: "Fetch data from server"
@@ -272,26 +442,28 @@
                         const result = await response.json();
                         const parseResult = JSON.parse(result.data);
                         serverResponseFetch = {
-                            dataAkun: parseResult[1],
+                            data: parseResult[1],
                             success: parseResult[2],
                             error: parseResult[4],
                             message: parseResult[3]
                         }
-                        if(serverResponseFetch.dataAkun){
+                        if(serverResponseFetch.data){
                             emptiedArray(userItems);
-                            serverResponseFetch.dataAkun?.forEach((data) => {
+                            serverResponseFetch.data?.forEach((data: any) => {
                                 userItems.push({
                                     id: data.id,
                                     name: data.username.toLocaleUpperCase(),
-                                    name2: accountTypeMap[data.accountType] || 'Tidak Dikenali',
+                                    name2: accountTypeMap[(data.accountType as keyof typeof accountTypeMap)] || 'Tidak Dikenali',
                                     event: (() => {
                                         pengaturanClick2();
-                                        editAkun = data.username;
-                                        editAkunId = data.id;
+                                        emptiedArray(edit);
+                                        edit.push(data.username);
+                                        edit.push(data.id)
                                     }),
                                     editEvent: (() => {
-                                        editAkun = data.username;
-                                        editAkunId = data.id;
+                                        emptiedArray(edit);
+                                        edit.push(data.username);
+                                        edit.push(data.id)
                                         forAccount = -1;
                                         editData = true;
                                         getData = false;
@@ -306,7 +478,7 @@
             editData = false;
         }
     }>
-    <p class=" text-amber-300">Yakin ingin hapus akun ini? {editAkun}</p>
+    <p class=" text-amber-300">Yakin ingin hapus akun ini? {edit[0]}</p>
     </MessageBox>
 {/if}
 <!-- END THE DELETE ACCOUNT -->
@@ -456,11 +628,21 @@
                 addAccount = true; 
                 pengaturanClick2();
                 forAccount = 1 ;
+                emptiedArray(edit);
+                getData = false;
+                submiting = false;
             }}>
-                {#if (addAccount && !form?.horay) || ((editAkun || editAkun.trim() !== '') && !form?.horay)}
-                    <form action="?/{((editAkun || editAkun.trim() !== '')) ? 'editAccount' : 'addAccount'}" method="post" class="flex flex-col w-full max-w-sm h-fit gap-2" use:enhance={() => {
+                {#if (addAccount && !form?.horay)}
+                    <form action="?/{((edit.length != 0)) ? 'editAccount' : 'addAccount'}" method="post" class="flex flex-col w-full max-w-sm h-fit gap-2" use:enhance={() => {
                         return async ({update}) => {
+                            newMsgBox = {
+                                Title: "LOADING",
+                                Message: "Tunggu Dulu",
+                                NotificationType: 'info',
+                            };
+                            submiting = true;
                             await update();
+                            newMsgBox = undefined!;
                             emptiedArray(userItems);
                             form?.dataAkun?.forEach((data) => {
                                 userItems.push({
@@ -469,12 +651,14 @@
                                     name2: accountTypeMap[data.accountType] || 'Tidak Dikenali',
                                     event: (() => {
                                         pengaturanClick2();
-                                        editAkun = data.username;
-                                        editAkunId = data.id;
+                                        emptiedArray(edit);
+                                        edit.push(data.username);
+                                        edit.push(data.id)
                                     }),
                                     editEvent: (() => {
-                                        editAkun = data.username;
-                                        editAkunId = data.id;
+                                        emptiedArray(edit);
+                                        edit.push(data.username);
+                                        edit.push(data.id)
                                         forAccount = -1;
                                         editData = true;
                                         getData = false;
@@ -497,11 +681,11 @@
                         <label for="Telp">Nomor Whatsapp: </label>
                         <input type="text" name="Telp" id="telp" required>
                         <label for="Username">Username: </label>
-                        <input type="text" name="Username" id="username" value={((editAkun || editAkun.trim() !== '')) ? editAkun : ''} required>
+                        <input type="text" name="Username" id="username" value={((edit.length != 0)) ? edit[0] : ''} required>
                         <label for="">Password: </label>
                         <input type="password" name="Password" id="password" required>
-                        <input type="hidden" name="editAkunId" class="" value={(editAkunId.trim() !== '') ? editAkunId : ''}>
-                        <button type="submit" class="flex w-full h-fit bg-gradient-to-b from-green-500 via-green-600 to-green-700 justify-center items-center text-center text-2xl rounded-2xl font-sans"> SUBMIT </button>
+                        <input type="hidden" name="editAkunId" class="" value={(edit) ? edit[1] : ''}>
+                        <button disabled={submiting} type="submit" class="flex w-full h-fit bg-gradient-to-b from-green-500 via-green-600 to-green-700 justify-center items-center text-center text-2xl rounded-2xl font-sans"> SUBMIT </button>
                     </form>
                 {:else if getData}
                     <MessageBox title="Berhasil" type="info" buttonType="ok" 
@@ -525,16 +709,144 @@
             </ListingComp>
         <!-- HERE LAY THE ADD UNIT -->
         {:else if subMenu.pengaturan == 2 && menuClick[4]}
-            <ListingComp disableAddButton={false} editable={false} items={[]} ifItems={true} ifOther={false} itemEdit={false} title={subMenu.titleSubMenu}>
-
+            <ListingComp disableAddButton={false} editable={true} items={unitItems} ifItems={pengaturanAturan2[0]} ifOther={false} itemEdit={pengaturanAturan2[1]} title={subMenu.titleSubMenu} selectedItemsID={0} onclick={() => {
+                pengaturanClick2();
+                emptiedArray(edit);
+                submiting = false;
+            }}>
+                {#if !newMsgBox}
+                    <form class="flex flex-col w-full max-w-sm h-fit gap-2" action="?/{(edit === undefined || (edit as Array<string>).length != 0) ? 'editUnit' : 'addUnit'}" method="post" use:enhance={() => {
+                        return async ({update}) => {
+                            newMsgBox = {
+                                Title: "LOADING",
+                                Message: "Tunggu Dulu",
+                                NotificationType: 'info',
+                            };
+                            submiting = true;
+                            await update();
+                            newMsgBox = undefined!;
+                            submiting = false;
+                            //console.log(edit);
+                            emptiedArray(edit);
+                            if(!form?.error){
+                                form?.dataUnits?.forEach((data) => {
+                                    unitItems.push({
+                                        id: '',
+                                        name: data.nameUnit.toLocaleUpperCase(),
+                                        name2: (data.fromTime && data.toTime) ? data.fromTime + " - " + data.toTime : null,
+                                        event: (() => {
+                                            pengaturanClick2();
+                                            emptiedArray(edit);
+                                            edit.push(data.nameUnit);
+                                        }),
+                                        editEvent: (() => {
+                                            emptiedArray(edit);
+                                            edit.push(data.nameUnit);
+                                            hapusUnitMsgBox('unit');
+                                        })
+                                    })
+                                })
+                                newMsgBox = {
+                                    Title: "Berhasil Ditambahkan",
+                                    Message: "Unit berhasil ditambahkan",
+                                    NotificationType: 'info',
+                                    ButtonType: 'ok',
+                                    Action: (() => {
+                                        pengaturanClick2();
+                                        submiting = false;
+                                        newMsgBox = undefined!;
+                                    })
+                                }
+                            }
+                        }
+                    }}>
+                        <label for="UnitName">Unit Name: </label>
+                        <input type="text" value={(edit.length != 0) ? edit[0] : ''} disabled={(edit.length != 0)} name="UnitName" id="unitName" required pattern="\S/[A-Za-z0-9-\/\-]+$">
+                        <label for="Status">Status :</label>
+                        <select name="Status" id="status" required>
+                            <option value="Ready">Ready</option>
+                            <option value="StandBy">Stand By</option>
+                            <option value="Working">Working</option>
+                            <option value="Closed">Closed</option>
+                        </select>
+                        <label for="FromWhenToWhen">Dari Kapan ke Kapan: </label>
+                        <input type="time" id="from-time" name="from-time">
+                        <input type="time" id="to-time" name="to-time">
+                        <button type="submit" disabled={submiting} class="flex w-full h-fit bg-gradient-to-b from-green-500 via-green-600 to-green-700 justify-center items-center text-center text-2xl rounded-2xl font-sans"> SUBMIT </button>
+                    </form>
+                {/if}
             </ListingComp>
         <!-- HERE LAY THE ADD AGENT -->
         {:else if subMenu.pengaturan == 2 && menuClick[5]}
-            <ListingComp disableAddButton={false} editable={false} items={[]} ifItems={true} ifOther={false} itemEdit={false} title={subMenu.titleSubMenu}>
-
+            <ListingComp disableAddButton={false} editable={true} items={agentItems} ifItems={pengaturanAturan2[0]} ifOther={false} itemEdit={pengaturanAturan2[1]} title={subMenu.titleSubMenu} selectedItemsID={0} onclick={() => {
+                pengaturanClick2();
+                emptiedArray(edit);
+                submiting = false;
+            }}>
+                {#if !newMsgBox}
+                    <form class="flex flex-col w-full max-w-sm h-fit gap-2" action="{(edit === undefined || (edit as Array<string>).length != 0) ? '?/editAgent' : '?/addAgent'}" method="post" use:enhance={() => {
+                        return async ({update}) => {
+                            newMsgBox = {
+                                Title: "LOADING",
+                                Message: "Tunggu Dulu",
+                                NotificationType: 'info',
+                            };
+                            submiting = true;
+                            await update();
+                            newMsgBox = undefined!
+                            submiting = false;
+                            //console.log(edit);
+                            emptiedArray(edit);
+                            if(!form?.error){
+                                form?.dataAgents?.forEach(data => {
+                                    agentItems.push({
+                                        id: data.id,
+                                        name: data.nameAgent.toLocaleUpperCase(),
+                                        name2: data.createdByWho,
+                                        event: (() => {
+                                            pengaturanClick2();
+                                            emptiedArray(edit);
+                                            edit.push(data.nameAgent);
+                                            edit.push(data.id);
+                                        }),
+                                        editEvent: (() => {
+                                            emptiedArray(edit);
+                                            edit.push(data.nameAgent);
+                                            edit.push(data.id);
+                                            hapusUnitMsgBox('unit');
+                                        })
+                                    });
+                                });
+                                newMsgBox = {
+                                    Title: "Berhasil Ditambahkan",
+                                    Message: "Unit berhasil ditambahkan",
+                                    NotificationType: 'info',
+                                    ButtonType: 'ok',
+                                    Action: (() => {
+                                        pengaturanClick2();
+                                        submiting = false;
+                                        newMsgBox = undefined!;
+                                    })
+                                }
+                            }
+                        }
+                    }}>
+                        <label for="AgentName">Agent Name: </label>
+                        <input type="text" value={(edit.length != 0) ? edit[0] : ''} disabled={(edit.length != 0)} name="AgentName" id="AgentName" required>
+                        <label for="EmailAgent">Agent Email: </label>
+                        <input type="email"  name="EmailAgent" id="EmailAgent" required>
+                        <label for="PhoneAgent">Phone Name: </label>
+                        <input type="text"  name="PhoneAgent" id="PhoneAgent" required>
+                        <input type="hidden" name="IdAgent" value={(edit) ? edit[1] : ''}>
+                        <button type="submit" disabled={submiting} class="flex w-full h-fit bg-gradient-to-b from-green-500 via-green-600 to-green-700 justify-center items-center text-center text-2xl rounded-2xl font-sans"> SUBMIT </button>
+                    </form>
+                {/if}
             </ListingComp>
         {:else}
-            <ListingComp disableAddButton={true} editable={false} items={pengaturanItems} ifItems={pengaturanAturan[0]} ifOther={pengaturanAturan[1]} title={subMenu.titleSubMenu} itemEdit={itemEdit} selectedItemsID = {subMenu.currentItemEditID}>
+        <!-- HERE LAY THE MAIN PENGATURAN -->
+            <ListingComp disableAddButton={true} editable={false} items={pengaturanItems} ifItems={pengaturanAturan[0]} ifOther={pengaturanAturan[1]} title={subMenu.titleSubMenu} itemEdit={itemEdit} selectedItemsID = {subMenu.currentItemEditID} onclick={() => {
+                
+            }}>
 
             </ListingComp>
         {/if}
