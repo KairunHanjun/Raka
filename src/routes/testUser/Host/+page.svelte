@@ -187,7 +187,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                             formData.append(deleteWhat+'Name', edit[0]);
                             try{
                                 const fetchRoute = (deleteWhat === 'unit') ? "?/deleteUnit" : "?/deleteAgent";
-                                console.log(fetchRoute);
+                                //console.log(fetchRoute);
                                 const response = await fetch(fetchRoute, {
                                     method: 'POST',
                                     body: formData
@@ -215,7 +215,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                                     serverResponseFetch.data?.forEach((data: any) => {
                                         if(deleteWhat === 'unit'){
                                             unitItems.push({
-                                                id: data.nameUnit,
+                                                id: data.id,
                                                 name: data.nameUnit.toLocaleUpperCase(),
                                                 name2: (data.fromTime + '-' + data.toTime) || 'Tidak Dikenali',
                                                 event: (() => {
@@ -306,7 +306,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
             })
             data.dataUnits?.forEach((data) => {
                 unitItems.push({
-                    id: data.nameUnit,
+                    id: data.id,
                     name: data.nameUnit.toLocaleUpperCase(),
                     name2: (data.fromTime && data.toTime) ? data.fromTime + " - " + data.toTime : null,
                     event: (() => {
@@ -343,6 +343,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                 });
             });
         }
+        //console.log(unitItems);
     }
 </script>
 
@@ -728,10 +729,11 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                             submiting = false;
                             //console.log(edit);
                             emptiedArray(edit);
+                            emptiedArray(unitItems);
                             if(!form?.error){
                                 form?.dataUnits?.forEach((data) => {
                                     unitItems.push({
-                                        id: data.nameUnit,
+                                        id: data.id,
                                         name: data.nameUnit.toLocaleUpperCase(),
                                         name2: (data.fromTime && data.toTime) ? data.fromTime + " - " + data.toTime : null,
                                         event: (() => {
@@ -757,11 +759,23 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                                         newMsgBox = undefined!;
                                     })
                                 }
+                            }else{
+                                newMsgBox = {
+                                    Title: "Gagal Ditambahkan",
+                                    Message: "Unit gagal ditambahkan",
+                                    NotificationType: 'danger',
+                                    ButtonType: 'ok',
+                                    Action: (() => {
+                                        pengaturanClick2();
+                                        submiting = false;
+                                        newMsgBox = undefined!;
+                                    })
+                                }
                             }
                         }
                     }}>
                         <label for="UnitName">Unit Name: </label>
-                        <input type="text" value={(edit.length != 0) ? edit[0] : ''} disabled={(edit.length != 0)} name="UnitName" id="unitName" required pattern="\S/[A-Za-z0-9-\/\-]+$">
+                        <input type="text" value={(edit.length != 0) ? edit[0] : ''} disabled={(edit.length != 0)} name="UnitName" id="unitName" required>
                         <label for="Status">Status :</label>
                         <select name="Status" id="status" required>
                             <option value="Ready">Ready</option>
@@ -797,6 +811,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                             submiting = false;
                             //console.log(edit);
                             emptiedArray(edit);
+                            emptiedArray(agentItems);
                             if(!form?.error){
                                 form?.dataAgents?.forEach(data => {
                                     agentItems.push({
@@ -821,6 +836,18 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                                     Title: "Berhasil Ditambahkan",
                                     Message: "Unit berhasil ditambahkan",
                                     NotificationType: 'info',
+                                    ButtonType: 'ok',
+                                    Action: (() => {
+                                        pengaturanClick2();
+                                        submiting = false;
+                                        newMsgBox = undefined!;
+                                    })
+                                }
+                            }else{
+                                newMsgBox = {
+                                    Title: "Gagal Ditambahkan",
+                                    Message: "Agent gagal ditambahkan",
+                                    NotificationType: 'danger',
                                     ButtonType: 'ok',
                                     Action: (() => {
                                         pengaturanClick2();

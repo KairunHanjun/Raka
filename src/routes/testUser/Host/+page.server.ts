@@ -30,13 +30,14 @@ export const load: PageServerLoad = async ({ }) => {
 
 	//TODO: Get Absensi
 
+	//console.log(dataUnits);
 		return {
 			dataAkun,
 			dataUnits,
 			dataAgents
 		}
 	} catch (error) {
-		console.log((error as Error).cause || '');
+		//console.log((error as Error).cause || '');
 		return {
 			error: (error as Error).name,
 			description: (error as Error).message
@@ -70,7 +71,7 @@ export const actions: Actions = {
 		return {
 			dataAgents: (dataAgents) ? dataAgents : null,
 			success: true,
-			message: "Data berhasil dihapus",
+			message: "Data berhasil ditambahkan",
 			error: null
 		}
 	},
@@ -78,18 +79,21 @@ export const actions: Actions = {
 		const fromData: FormData = await event.request.formData();
 		const UnitName: string = (fromData.get("UnitName"))?.toString() ?? '';
 		const Status: string = (fromData.get("Status"))?.toString() ?? '';
-		const FromTime: string = (fromData.get("from-time"))?.toString() ?? '';
-		const ToTime: string = (fromData.get("to-time"))?.toString() ?? '';
+		const FromTime: string | null = (fromData.get("from-time"))?.toString() ?? null;
+		const ToTime: string | null = (fromData.get("to-time"))?.toString() ?? null;
 		let dataUnit;
 		try {
+			//console.log("Hello world");
 			await db.insert(units).values({
 				nameUnit: UnitName as string,
 				unitState: Status as any,
-				fromTime: FromTime as string,
-				toTime: ToTime as string
+				fromTime: (FromTime) ? (FromTime as string) : null,
+				toTime: (ToTime) ? (ToTime as string) : null
 			});
 			dataUnit = await db.select().from(units);
 		} catch (error) {
+			//console.log((error as Error).message);
+			//console.log((error as Error).cause ?? "");
 			return fail(422, {
 				description: "Unit telah terdaftar pada database",
 				error: (error instanceof Error) ? (error as Error).message : "Unit already taken"
@@ -98,7 +102,7 @@ export const actions: Actions = {
 		return {
 			dataUnits: (dataUnit) ? dataUnit : null,
 			success: true,
-			message: "Data berhasil dihapus",
+			message: "Data berhasil ditambahkan",
 			error: null
 		}
 	},
@@ -177,15 +181,15 @@ export const actions: Actions = {
 		const fromData: FormData = await event.request.formData();
 		const UnitName: string = (fromData.get("UnitName"))?.toString() ?? '';
 		const Status: string = (fromData.get("Status"))?.toString() ?? '';
-		const FromTime: string = (fromData.get("from-time"))?.toString() ?? '';
-		const ToTime: string = (fromData.get("to-time"))?.toString() ?? '';
+		const FromTime: string | null = (fromData.get("from-time"))?.toString() ?? null;
+		const ToTime: string | null = (fromData.get("to-time"))?.toString() ?? null;
 		let dataUnit;
 		try {
 			await db.update(units).set({
 				nameUnit: UnitName as string,
 				unitState: Status as any,
-				fromTime: FromTime as string,
-				toTime: ToTime as string
+				fromTime: (FromTime) ? (FromTime as string) : null,
+				toTime: (ToTime) ? (ToTime as string) : null
 			}).where(eq(units.nameUnit, (UnitName as string)));
 			dataUnit = await db.select().from(units);
 		} catch (error) {
@@ -197,7 +201,7 @@ export const actions: Actions = {
 		return {
 			dataUnits: (dataUnit) ? dataUnit : null,
 			success: true,
-			message: "Data berhasil dihapus",
+			message: "Data berhasil diubah",
 			error: null
 		}
 	},
@@ -226,7 +230,7 @@ export const actions: Actions = {
 		return {
 			dataAgents: (dataAgents) ? dataAgents : null,
 			success: true,
-			message: "Data berhasil dihapus",
+			message: "Data berhasil diubah",
 			error: null
 		}
 	},
@@ -305,7 +309,7 @@ export const actions: Actions = {
 			await db.delete(agents).where(eq(agents.nameAgent, (IdAgent as string)));
 			dataAgents = await db.select().from(agents);
 		} catch (error) {
-			console.log("Delete Data Error...");
+			//console.log("Delete Data Error...");
 			return fail(422, {
 				dataUnits: undefined!,
 				success: false,
@@ -328,7 +332,7 @@ export const actions: Actions = {
 			await db.delete(units).where(eq(units.nameUnit, (unitName as string)));
 			dataUnit = await db.select().from(units);
 		} catch (error) {
-			console.log("Delete Data Error...");
+			//console.log("Delete Data Error...");
 			return fail(422, {
 				dataUnits: undefined!,
 				success: false,
@@ -355,7 +359,7 @@ export const actions: Actions = {
 				accountType: accounts.accountType
 			}).from(accounts).where(ne(accounts.accountType, 'H'));
 		} catch (error) {
-			console.log("Delete Data Error...");
+			//console.log("Delete Data Error...");
 			return fail(422, {
 				success: false,
 				message: "Tidak bisa diubah datanya....",
