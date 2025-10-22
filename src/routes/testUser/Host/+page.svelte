@@ -215,7 +215,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                                     serverResponseFetch.data?.forEach((data: any) => {
                                         if(deleteWhat === 'unit'){
                                             unitItems.push({
-                                                id: null,
+                                                id: data.nameUnit,
                                                 name: data.nameUnit.toLocaleUpperCase(),
                                                 name2: (data.fromTime + '-' + data.toTime) || 'Tidak Dikenali',
                                                 event: (() => {
@@ -306,7 +306,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
             })
             data.dataUnits?.forEach((data) => {
                 unitItems.push({
-                    id: '',
+                    id: data.nameUnit,
                     name: data.nameUnit.toLocaleUpperCase(),
                     name2: (data.fromTime && data.toTime) ? data.fromTime + " - " + data.toTime : null,
                     event: (() => {
@@ -731,7 +731,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                             if(!form?.error){
                                 form?.dataUnits?.forEach((data) => {
                                     unitItems.push({
-                                        id: '',
+                                        id: data.nameUnit,
                                         name: data.nameUnit.toLocaleUpperCase(),
                                         name2: (data.fromTime && data.toTime) ? data.fromTime + " - " + data.toTime : null,
                                         event: (() => {
@@ -784,7 +784,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                 submiting = false;
             }}>
                 {#if !newMsgBox}
-                    <form class="flex flex-col w-full max-w-sm h-fit gap-2" action="{(edit === undefined || (edit as Array<string>).length != 0) ? '?/editAgent' : '?/addAgent'}" method="post" use:enhance={() => {
+                    <form class="flex flex-col w-full max-w-sm h-fit gap-2" action="{(edit === undefined || (edit as Array<string>).length != 0) ? '?/editAgent' : 'addAgent'}" method="post" use:enhance={() => {
                         return async ({update}) => {
                             newMsgBox = {
                                 Title: "LOADING",
