@@ -603,6 +603,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
             }}>
                 {#if (addAccount && !form?.horay) || (edit.length != 0) || addAccount}
                     <form onsubmit={() => {
+                        submiting = true;
                         newMsgBox = {
                             Title: "LOADING",
                             Message: "Tunggu Dulu",
@@ -610,7 +611,6 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                         };
                     }} action="?/{((edit.length != 0)) ? 'editAccount' : 'addAccount'}" method="post" class="flex flex-col w-full max-w-sm h-fit gap-2" use:enhance={() => {
                         return async ({update}) => {
-                            submiting = true;
                             await update();
                             newMsgBox = undefined!;
                             emptiedArray(edit);
@@ -657,8 +657,9 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                 emptiedArray(edit);
                 submiting = false;
             }}>
-                {#if !newMsgBox}
+
                     <form onsubmit={() => {
+                        submiting = true;
                         newMsgBox = {
                             Title: "LOADING",
                             Message: "Tunggu Dulu",
@@ -666,12 +667,12 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                         };
                     }} class="flex flex-col w-full max-w-sm h-fit gap-2" action="?/{(edit === undefined || (edit as Array<string>).length != 0) ? 'editUnit' : 'addUnit'}" method="post" use:enhance={() => {
                         return async ({update}) => {
-                            submiting = true;
                             await update();
                             newMsgBox = undefined!;
                             submiting = false;
                             //console.log(edit);
                             emptiedArray(edit);
+                            console.log(form);
                             if(!form?.error){
                                 newMsgBox = {
                                     Title: "Berhasil Ditambahkan",
@@ -715,7 +716,6 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                         <input type="time" id="to-time" name="to-time">
                         <button type="submit" disabled={submiting} class="flex w-full h-fit bg-gradient-to-b from-green-500 via-green-600 to-green-700 justify-center items-center text-center text-2xl rounded-2xl font-sans"> SUBMIT </button>
                     </form>
-                {/if}
             </ListingComp>
         <!-- HERE LAY THE ADD AGENT -->
         {:else if subMenu.pengaturan == 2 && menuClick[5]}
@@ -726,6 +726,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
             }}>
                 {#if !newMsgBox}
                     <form onsubmit={() => {
+                        submiting = true;
                         newMsgBox = {
                             Title: "LOADING",
                             Message: "Tunggu Dulu",
@@ -733,7 +734,6 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                         };
                     }} class="flex flex-col w-full max-w-sm h-fit gap-2" action="{(edit === undefined || (edit as Array<string>).length != 0) ? '?/editAgent' : 'addAgent'}" method="post" use:enhance={() => {
                         return async ({update}) => {
-                            submiting = true;
                             await update();
                             newMsgBox = undefined!
                             submiting = false;
