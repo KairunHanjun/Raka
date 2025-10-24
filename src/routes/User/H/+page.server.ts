@@ -5,37 +5,36 @@ import type { Actions, PageServerLoad } from "./$types";
 import { hash } from "argon2";
 import { generateIdFromEntropySize } from "lucia";
 import { db } from "$lib/server/db";
-import { createSession, generateSessionToken, setSessionTokenCookie } from "$lib/server/auth";
 import { accounts, agents, units } from "$lib/server/db/schema";
-import { eq, ne } from "drizzle-orm/sql/expressions/conditions";
+import { eq, ne, and } from "drizzle-orm/sql/expressions/conditions";
 import { asc } from "drizzle-orm";
+import { deleteSessionTokenCookie, invalidateSession, sessionCookieName } from "$lib/server/auth";
 
-function validateSession(){
-
-}
-
-export const load: PageServerLoad = async ({ }) => {
-	//TODO: Validate Session User
-	//TODO: get accounts&agent id from user session and put it in the createdByWho
+export const load: PageServerLoad = async ({ locals }) => {
+	if (!locals.user || locals.user.accountType !== 'H') {
+		throw redirect(302, '/');
+	}
 	try {
 	const dataAkun = await db.select({
 		id: accounts.id,
 		username: accounts.username,
 		accountType: accounts.accountType
-	}).from(accounts).where(ne(accounts.accountType, 'H')/*, eq(accounts.createdByWho, )*/);
+	}).from(accounts).where(and(ne(accounts.accountType, 'H'), eq(accounts.createdByWho, locals.user.username)));
 	//Get Unit
 	const dataUnits = await db.select().from(units).orderBy(asc(units.unitState));
 	//Get Agent
-	const dataAgents = await db.select().from(agents)/*.where(/*, eq(accounts.createdByWho, ))*/;
+	const dataAgents = await db.select().from(agents).where(eq(agents.createdByWho, locals.user.username));
 	//TODO: Get Masalah
 
 	//TODO: Get Absensi
 
 	//console.log(dataUnits);
+	const userNow = locals.user;
 		return {
 			dataAkun,
 			dataUnits,
 			dataAgents,
+			userNow
 		}
 	} catch (error) {
 		//console.log((error as Error).cause || '');
@@ -46,23 +45,19 @@ export const load: PageServerLoad = async ({ }) => {
 	}
 }
 
-//TODO: Validate Session User First for every request from server
 export const actions: Actions = {
 	addAgent: async (event) => {
 		const fromData: FormData = await event.request.formData();
 		const AgentName: string = (fromData.get("AgentName"))?.toString() ?? '';
 		const EmailAgent: string = (fromData.get("EmailAgent"))?.toString() ?? '';
 		const PhoneAgent: string = (fromData.get("PhoneAgent"))?.toString() ?? '';
-		let dataAgents;
 		try {
 			await db.insert(agents).values({
 				nameAgent: AgentName as string,
 				email: EmailAgent as string,
 				phoneNumber: PhoneAgent as string,
-				//TODO: Add created by who if login is added
-				createdByWho: ''
+				createdByWho: event.locals.user?.username ?? ''
 			});
-			dataAgents = await db.select().from(agents);
 		} catch (error) {
 			return fail(422, {
 				success: false,
@@ -83,7 +78,6 @@ export const actions: Actions = {
 		const FromTime: string | null = (fromData.get("from-time"))?.toString() ?? null;
 		const ToTime: string | null = (fromData.get("to-time"))?.toString() ?? null;
 		try {
-			//console.log("Hello world");
 			await db.insert(units).values({
 				nameUnit: UnitName as string,
 				unitState: Status as any,
@@ -91,8 +85,6 @@ export const actions: Actions = {
 				toTime: (ToTime) ? (ToTime as string) : null
 			});
 		} catch (error) {
-			//console.log((error as Error).message);
-			//console.log((error as Error).cause ?? "");
 			return fail(422, {
 				success: false,
 				message: "Data gagal ditambahkan",
@@ -152,8 +144,8 @@ export const actions: Actions = {
 				passwordHash: passwordHash as string,
 				phoneNumber: telp as string ,
 				createdAt: new Date(createdAt),
-				//TODO: Add created by who if login is added
-				createdByWho: ''
+
+				createdByWho: event.locals.user?.username ?? ''
 			});
 		} catch (error) {
 			console.log("Error: " + (error as Error).message);
@@ -165,11 +157,6 @@ export const actions: Actions = {
 		
 		// const session = await createSession(generateSessionToken(), userId);
 		// const sessionCookie = setSessionTokenCookie(event, session.id, new Date(new Date().getTime() + 24 * 60 * 60 * 1000));
-		const dataAkun = await db.select({
-			id: accounts.id,
-			username: accounts.username,
-			accountType: accounts.accountType
-		}).from(accounts).where(ne(accounts.accountType, 'H'));
 		//console.log("Done: " + dataAkun);
 		return {
 			horay: true
@@ -212,8 +199,7 @@ export const actions: Actions = {
 				nameAgent: AgentName as string,
 				email: EmailAgent as string,
 				phoneNumber: PhoneAgent as string,
-				//TODO: Add created by who if login is added
-				createdByWho: ''
+				createdByWho: event.locals.user?.username ?? ''
 			}).where(eq(agents.id, (IdAgent as string)));
 		} catch (error) {
 			return fail(422, {
@@ -330,7 +316,7 @@ export const actions: Actions = {
 	deleteAccount: async (event) => {
 
 		const formData: FormData = await event.request.formData();
-		console.log(formData);
+		//console.log(formData);
 		const id: string = (formData.get("id"))?.toString() ?? '';
 		try {
 			await db.delete(accounts).where(eq(accounts.id, (id as string)));

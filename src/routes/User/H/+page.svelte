@@ -336,6 +336,8 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                         })
                     });
                 });
+            }else{
+                getData = true;
             }
         }
     }
@@ -450,8 +452,31 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
         }else{
             subMenu.pengaturan = 0;
             subMenu.laporan = 0;
+            newMsgBox = {
+                Title: "Keluar",
+                Message: "Apakah yakin ingin keluar?",
+                NotificationType: 'warning',
+                ButtonType: 'yesno',
+                Action: async (result: any) => {
+                    if(result){
+                        if(result === 'yes' && !deleting){
+                            deleting = true;
+                            try{
+                                await fetch('/logout', {
+                                    method: 'GET'
+                                });
+                                deleting = false;
+                                location.reload();
+                                newMsgBox = undefined!
+                            }catch (error) {console.log(error);}
+                        }else if(result === 'no' && !deleting){
+                           newMsgBox = undefined!
+                        }
+                    }
+                }
+            }
         }
-    }}/>
+    }} name={(data?.userNow?.username ?? 'User').toUpperCase()}/>
     {#if subMenu.pengaturan === 0 && subMenu.laporan === 0}
         <div class="h-fit w-fit flex flex-col justify-center items-center gap-4">
             <TopActionCard label="Lihat Room" onclick={() => {

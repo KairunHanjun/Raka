@@ -2,7 +2,6 @@
 	import ActionCard from "$lib/comp/actionCard.svelte";
 	import Header from "$lib/comp/header.svelte";
 	import ListingComp from "$lib/comp/listingComp.svelte";
-	import LoginForm from "$lib/comp/loginForm.svelte";
 	import MessageBox from "$lib/comp/messageBox.svelte";
   import SelamatDatang from "$lib/comp/selamatDatang.svelte";
 	import TopActionCard from "$lib/comp/topActionCard.svelte";
@@ -64,7 +63,7 @@
 {:else if selected === "loginForm"}
   <div class=" text-white">
     {#if object.back} 
-      <LoginForm />
+      
       <p>You now login</p>
     {:else}
       <button onclick={() => {
@@ -124,14 +123,14 @@
   {#if showThisDialog}
     <MessageBox title="Hello World" type="info" buttonType="yesno" handleResult={(thisDialogResult: any) => {
       const userChoice = thisDialogResult.detail.result;
-      console.log(userChoice)
+      
       showThisDialog = false;
     }}>
       <p class="">Are you sure want to quit?</p>
     </MessageBox>
   {/if}
 <button onclick={() => {
-  console.log(showThisDialog)
+  
   showThisDialog = true;
 }} class="text-white w-fit h-fit rounded-2xl bg-amber-600">Click me to show</button>
 {/if}

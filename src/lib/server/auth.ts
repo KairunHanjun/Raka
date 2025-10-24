@@ -36,6 +36,7 @@ export async function validateSessionToken(token: string): Promise<{
         expiresAt: Date;
     };
     user: {
+		accountType: "FO" | "HK" | "T" | "H";
         id: string;
         username: string;
     };
@@ -44,7 +45,7 @@ export async function validateSessionToken(token: string): Promise<{
 	const [result] = await db
 		.select({
 			// Adjust user table here to tweak returned data
-			user: { id: table.accounts.id, username: table.accounts.username },
+			user: { id: table.accounts.id, username: table.accounts.username, accountType: table.accounts.accountType},
 			session: table.session
 		})
 		.from(table.session)
