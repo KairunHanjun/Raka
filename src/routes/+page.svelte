@@ -30,6 +30,7 @@
     let back: boolean = $state(false);
     let selamatText: Array<string> = $state([selamatDatangtext[0], selamatDatangtext[1]]);
     let newMsgBox: MsgBox | undefined = $state(undefined);
+    let submiting: boolean = $state(false);
 </script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -63,7 +64,9 @@
                 {/each}
             {:else}
                 <div class="bg-slate-200 p-8 md:p-12 rounded-3xl shadow-lg w-full max-w-md border border-slate-300">
-                    <form onsubmit={() => {}} class="flex flex-col gap-6" method="post" use:enhance={() => {
+                    <form onsubmit={() => {
+                        submiting = true;
+                    }} class="flex flex-col gap-6" method="post" use:enhance={() => {
                         return async ({update}) => {
                             await update();
                             if(form?.error){
@@ -73,6 +76,7 @@
                                     NotificationType: 'danger',
                                     ButtonType: 'ok',
                                     Action: () => {
+                                        submiting=false;
                                         newMsgBox = undefined!;
                                     }
                                 }
@@ -130,6 +134,7 @@
                             <!-- Login Button -->
                             <button 
                                 type="submit"
+                                disabled={submiting}
                                 class="
                                 w-full bg-blue-500 text-white font-bold
                                 text-xl py-4 rounded-full

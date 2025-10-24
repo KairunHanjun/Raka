@@ -434,9 +434,6 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
             forAccount = 0;
             return;
         }
-        for (let i = 0; i < menuClick.length; i++) {
-            menuClick[i] = false;
-        }
         if(itemEdit){
             itemEdit = false;
             subMenu.titleSubMenu = (subMenu.pengaturan >= 1) ? "Pengaturan" : ((subMenu.laporan >= 1) ? "Laporan" : "");
@@ -452,7 +449,14 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
         }else{
             subMenu.pengaturan = 0;
             subMenu.laporan = 0;
-            newMsgBox = {
+        }
+        if(menuClick.find(x => x === true)){
+            for (let i = 0; i < menuClick.length; i++) {
+                menuClick[i] = false;
+            }
+            return;
+        }
+        newMsgBox = {
                 Title: "Keluar",
                 Message: "Apakah yakin ingin keluar?",
                 NotificationType: 'warning',
@@ -475,7 +479,6 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                     }
                 }
             }
-        }
     }} name={(data?.userNow?.username ?? 'User').toUpperCase()}/>
     {#if subMenu.pengaturan === 0 && subMenu.laporan === 0}
         <div class="h-fit w-fit flex flex-col justify-center items-center gap-4">
