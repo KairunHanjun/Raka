@@ -724,7 +724,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                 emptiedArray(edit);
                 submiting = false;
             }}>
-                {#if !newMsgBox}
+                
                     <form onsubmit={() => {
                         submiting = true;
                         newMsgBox = {
@@ -777,7 +777,6 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                         <input type="hidden" name="IdAgent" value={(edit) ? edit[1] : ''}>
                         <button type="submit" disabled={submiting} class="flex w-full h-fit bg-gradient-to-b from-green-500 via-green-600 to-green-700 justify-center items-center text-center text-2xl rounded-2xl font-sans"> SUBMIT </button>
                     </form>
-                {/if}
             </ListingComp>
         {:else}
         <!-- HERE LAY THE MAIN PENGATURAN -->
