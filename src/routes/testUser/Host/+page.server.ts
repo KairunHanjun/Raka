@@ -8,6 +8,7 @@ import { db } from "$lib/server/db";
 import { createSession, generateSessionToken, setSessionTokenCookie } from "$lib/server/auth";
 import { accounts, agents, units } from "$lib/server/db/schema";
 import { eq, ne } from "drizzle-orm/sql/expressions/conditions";
+import { asc } from "drizzle-orm";
 
 function validateSession(){
 
@@ -23,7 +24,7 @@ export const load: PageServerLoad = async ({ }) => {
 		accountType: accounts.accountType
 	}).from(accounts).where(ne(accounts.accountType, 'H')/*, eq(accounts.createdByWho, )*/);
 	//Get Unit
-	const dataUnits = await db.select().from(units);
+	const dataUnits = await db.select().from(units).orderBy(asc(units.unitState));
 	//Get Agent
 	const dataAgents = await db.select().from(agents)/*.where(/*, eq(accounts.createdByWho, ))*/;
 	//TODO: Get Masalah
@@ -34,7 +35,7 @@ export const load: PageServerLoad = async ({ }) => {
 		return {
 			dataAkun,
 			dataUnits,
-			dataAgents
+			dataAgents,
 		}
 	} catch (error) {
 		//console.log((error as Error).cause || '');
@@ -64,12 +65,12 @@ export const actions: Actions = {
 			dataAgents = await db.select().from(agents);
 		} catch (error) {
 			return fail(422, {
-				description: "Unit telah terdaftar pada database",
-				error: (error instanceof Error) ? (error as Error).message : "Unit already taken"
+				success: false,
+				message: "Data gagal ditambahkan",
+				error: (error as Error).cause,
 			})
 		}
 		return {
-			dataAgents: (dataAgents) ? dataAgents : null,
 			success: true,
 			message: "Data berhasil ditambahkan",
 			error: null
@@ -81,7 +82,6 @@ export const actions: Actions = {
 		const Status: string = (fromData.get("Status"))?.toString() ?? '';
 		const FromTime: string | null = (fromData.get("from-time"))?.toString() ?? null;
 		const ToTime: string | null = (fromData.get("to-time"))?.toString() ?? null;
-		let dataUnit;
 		try {
 			//console.log("Hello world");
 			await db.insert(units).values({
@@ -90,17 +90,16 @@ export const actions: Actions = {
 				fromTime: (FromTime) ? (FromTime as string) : null,
 				toTime: (ToTime) ? (ToTime as string) : null
 			});
-			dataUnit = await db.select().from(units);
 		} catch (error) {
 			//console.log((error as Error).message);
 			//console.log((error as Error).cause ?? "");
 			return fail(422, {
-				description: "Unit telah terdaftar pada database",
-				error: (error instanceof Error) ? (error as Error).message : "Unit already taken"
+				success: false,
+				message: "Data gagal ditambahkan",
+				error: (error as Error).cause,
 			})
 		}
 		return {
-			dataUnits: (dataUnit) ? dataUnit : null,
 			success: true,
 			message: "Data berhasil ditambahkan",
 			error: null
@@ -124,7 +123,7 @@ export const actions: Actions = {
 		) {
 			return fail(400, {
 				error: "Invalid Username",
-				description: "username harus lebih dari 3 dan kurang dari 31"
+				description: "username harus lebih dari 3 dan kurang dari 31 dan harus huruf kecil semua"
 			});
 		}
 		if (password.length < 6 || password.length > 255) {
@@ -157,7 +156,7 @@ export const actions: Actions = {
 				createdByWho: ''
 			});
 		} catch (error) {
-			//console.log("Error: " + (error as Error).message);
+			console.log("Error: " + (error as Error).message);
 			return fail(422, {
 				description: "Nama telah terdaftar pada database",
 				error: (error instanceof Error) ? (error as Error).message : "Username already taken"
@@ -173,7 +172,6 @@ export const actions: Actions = {
 		}).from(accounts).where(ne(accounts.accountType, 'H'));
 		//console.log("Done: " + dataAkun);
 		return {
-			dataAkun,
 			horay: true
 		}
 	},
@@ -183,7 +181,6 @@ export const actions: Actions = {
 		const Status: string = (fromData.get("Status"))?.toString() ?? '';
 		const FromTime: string | null = (fromData.get("from-time"))?.toString() ?? null;
 		const ToTime: string | null = (fromData.get("to-time"))?.toString() ?? null;
-		let dataUnit;
 		try {
 			await db.update(units).set({
 				nameUnit: UnitName as string,
@@ -191,15 +188,14 @@ export const actions: Actions = {
 				fromTime: (FromTime) ? (FromTime as string) : null,
 				toTime: (ToTime) ? (ToTime as string) : null
 			}).where(eq(units.nameUnit, (UnitName as string)));
-			dataUnit = await db.select().from(units);
 		} catch (error) {
 			return fail(422, {
-				description: "Unit telah terdaftar pada database",
-				error: (error instanceof Error) ? (error as Error).message : "Unit already taken"
+				success: false,
+				message: "Gagal terjadi kesalahan",
+				error: (error as Error).cause,
 			})
 		}
 		return {
-			dataUnits: (dataUnit) ? dataUnit : null,
 			success: true,
 			message: "Data berhasil diubah",
 			error: null
@@ -211,7 +207,6 @@ export const actions: Actions = {
 		const EmailAgent: string = (fromData.get("EmailAgent"))?.toString() ?? '';
 		const PhoneAgent: string = (fromData.get("PhoneAgent"))?.toString() ?? '';
 		const IdAgent: string = (fromData.get("IdAgent"))?.toString() ?? '';
-		let dataAgents;
 		try {
 			await db.update(agents).set({
 				nameAgent: AgentName as string,
@@ -220,15 +215,14 @@ export const actions: Actions = {
 				//TODO: Add created by who if login is added
 				createdByWho: ''
 			}).where(eq(agents.id, (IdAgent as string)));
-			dataAgents = await db.select().from(agents);
 		} catch (error) {
 			return fail(422, {
-				description: "Unit telah terdaftar pada database",
-				error: (error instanceof Error) ? (error as Error).message : "Unit already taken"
+				success: false,
+				message: "Gagal terjadi kesalahan",
+				error: (error as Error).cause,
 			})
 		}
 		return {
-			dataAgents: (dataAgents) ? dataAgents : null,
 			success: true,
 			message: "Data berhasil diubah",
 			error: null
@@ -291,34 +285,24 @@ export const actions: Actions = {
 		
 		// const session = await createSession(generateSessionToken(), userId);
 		// const sessionCookie = setSessionTokenCookie(event, session.id, new Date(new Date().getTime() + 24 * 60 * 60 * 1000));
-		const dataAkun = await db.select({
-			id: accounts.id,
-			username: accounts.username,
-			accountType: accounts.accountType
-		}).from(accounts).where(ne(accounts.accountType, 'H'));
 		return {
-			dataAkun,
 			horay: true
 		}
 	},
 	deleteAgent: async (event) => {
 		const formData: FormData = await event.request.formData();
 		const IdAgent: string = (formData.get("AgentName"))?.toString() ?? '';
-		let dataAgents;
 		try {
 			await db.delete(agents).where(eq(agents.nameAgent, (IdAgent as string)));
-			dataAgents = await db.select().from(agents);
 		} catch (error) {
 			//console.log("Delete Data Error...");
 			return fail(422, {
-				dataUnits: undefined!,
 				success: false,
 				message: "Tidak bisa diubah datanya....",
 				error: (error instanceof Error) ? (error as Error).message : "Data cannot be changed"
 			})
 		}
 		return {
-			dataAgents: (dataAgents) ? dataAgents : null,
 			success: true,
 			message: "Data berhasil dihapus",
 			error: null
@@ -327,37 +311,29 @@ export const actions: Actions = {
 	deleteUnit: async (event) => {
 		const formData: FormData = await event.request.formData();
 		const unitName: string = (formData.get("unitName"))?.toString() ?? '';
-		let dataUnit;
 		try {
 			await db.delete(units).where(eq(units.nameUnit, (unitName as string)));
-			dataUnit = await db.select().from(units);
 		} catch (error) {
 			//console.log("Delete Data Error...");
 			return fail(422, {
-				dataUnits: undefined!,
 				success: false,
 				message: "Tidak bisa diubah datanya....",
 				error: (error instanceof Error) ? (error as Error).message : "Data cannot be changed"
 			})
 		}
 		return {
-			dataUnits: (dataUnit) ? dataUnit : null,
 			success: true,
 			message: "Data berhasil dihapus",
 			error: null
 		}
 	},
 	deleteAccount: async (event) => {
+
 		const formData: FormData = await event.request.formData();
+		console.log(formData);
 		const id: string = (formData.get("id"))?.toString() ?? '';
-		let dataAkun;
 		try {
 			await db.delete(accounts).where(eq(accounts.id, (id as string)));
-			dataAkun = await db.select({
-				id: accounts.id,
-				username: accounts.username,
-				accountType: accounts.accountType
-			}).from(accounts).where(ne(accounts.accountType, 'H'));
 		} catch (error) {
 			//console.log("Delete Data Error...");
 			return fail(422, {
@@ -367,7 +343,6 @@ export const actions: Actions = {
 			})
 		}
 		return {
-			dataAkun: (dataAkun) ? dataAkun : null,
 			success: true,
 			message: "Data berhasil dihapus",
 			error: null

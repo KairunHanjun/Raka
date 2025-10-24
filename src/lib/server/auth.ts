@@ -9,13 +9,13 @@ const DAY_IN_MS = 1000 * 60 * 60 * 24;
 
 export const sessionCookieName = 'auth-session';
 
-export function generateSessionToken() {
+export function generateSessionToken(): string {
 	const bytes = crypto.getRandomValues(new Uint8Array(18));
 	const token = encodeBase64url(bytes);
 	return token;
 }
 
-export async function createSession(token: string, userId: string) {
+export async function createSession(token: string, userId: string): Promise<{ id: string; userId: string; expiresAt: Date; }> {
 	const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
 	const session: table.Session = {
 		id: sessionId,
@@ -26,7 +26,20 @@ export async function createSession(token: string, userId: string) {
 	return session;
 }
 
-export async function validateSessionToken(token: string) {
+export async function validateSessionToken(token: string): Promise<{
+    session: null;
+    user: null;
+} | {
+    session: {
+        id: string;
+        userId: string;
+        expiresAt: Date;
+    };
+    user: {
+        id: string;
+        username: string;
+    };
+}> {
 	const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
 	const [result] = await db
 		.select({
@@ -67,15 +80,15 @@ export async function invalidateSession(sessionId: string) {
 	await db.delete(table.session).where(eq(table.session.id, sessionId));
 }
 
-export function setSessionTokenCookie(event: RequestEvent, token: string, expiresAt: Date) {
+export function setSessionTokenCookie(event: RequestEvent, token: string, expiresAt: Date, path: string) {
 	event.cookies.set(sessionCookieName, token, {
 		expires: expiresAt,
-		path: '/'
+		path: path
 	});
 }
 
-export function deleteSessionTokenCookie(event: RequestEvent) {
+export function deleteSessionTokenCookie(event: RequestEvent, path: string) {
 	event.cookies.delete(sessionCookieName, {
-		path: '/'
+		path: path
 	});
 }

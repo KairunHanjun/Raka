@@ -11,20 +11,22 @@
   let { 
     back = true, 
     selamatText = [],
-    onsubmit: handleLogin = () => {},
-    dataLogin = {username: '', password: '', session: ''}
+    onsubmit: handleLogin = (dataLogin: DataLogin) => {},
+    dataLogin = {username: '', password: '', session: ''},
+    action: whatAction = '',
   } = $props<{
     dataLogin?: DataLogin
     back?: boolean;
     selamatText?: Array<string>;
-    onsubmit?: void | (() => void) | (() => {});
+    onsubmit?: void | (() => void) | (() => {}) | ((dataLogin: DataLogin) => void);
+    action?: string;
   }>();
   
 
 </script>
 
 <div class="bg-slate-200 p-8 md:p-12 rounded-3xl shadow-lg w-full max-w-md border border-slate-300">
-  <form onsubmit={handleLogin} class="flex flex-col gap-6" method="post" use:enhance>
+  <form onsubmit={() => handleLogin(dataLogin)} action={whatAction} class="flex flex-col gap-6" method="post" use:enhance>
     
     <!-- Username Input -->
     <div>

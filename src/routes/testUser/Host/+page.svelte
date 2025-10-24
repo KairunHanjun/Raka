@@ -4,13 +4,19 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
 <script lang="ts">
 
 	import { enhance } from "$app/forms";
-	import { invalidateAll } from "$app/navigation";
+	import { invalidate, invalidateAll } from "$app/navigation";
 	import ActionCard from "$lib/comp/actionCard.svelte";
 	import Header from "$lib/comp/header.svelte";
 	import ListingComp from "$lib/comp/listingComp.svelte";
 	import MessageBox from "$lib/comp/messageBox.svelte";
 	import TopActionCard from "$lib/comp/topActionCard.svelte";
 	import type { PageProps } from "./$types";
+
+    let deleteFormData: Array<{
+        action: string;
+        input: Array<{name: string; value: string}>;
+        enhanceAction: (() => void);
+    }> = $state(undefined!)
 
   type UnitItem = {
     id: number | string | any;
@@ -70,6 +76,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
         name2: '',
         event: () => {
             itemEdit = false;
+            emptiedArray(edit);
             subMenu.currentItemEditID = 0;
             subMenu.titleSubMenu = 'Edit Akun';
             if(subMenu.pengaturan < 2){
@@ -89,6 +96,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
         event: () => {
             
             itemEdit = false;
+            emptiedArray(edit);
             subMenu.currentItemEditID = 1;
             subMenu.titleSubMenu = 'Edit Unit';
             if(subMenu.pengaturan < 2){
@@ -110,6 +118,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
         name2: '',
         event: () => {
             itemEdit = false;
+            emptiedArray(edit);
             subMenu.currentItemEditID = 2;
             subMenu.titleSubMenu = 'Edit Agent';
             if(subMenu.pengaturan < 2){
@@ -169,6 +178,13 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
         }
     }
      */
+    interface Rooms {
+        id: string;
+        name: string;
+        times: string;
+        state: string;
+    };
+    let rooms: Array<Rooms> = $state([]);
     let unitItems: UnitItem[] = $state([])
     let agentItems: UnitItem[] = $state([])
     let ExclusiveButtonType: 'ok' | 'yesno' | 'subcancel' | undefined = 'yesno';
@@ -181,7 +197,8 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                 Action: (async (result: any) => {
                     await invalidateAll();
                     if(result){
-                        if(result === 'yes'){
+                        if(result === 'yes' && !deleting){
+                            deleting = true;
                             ExclusiveButtonType = undefined!;
                             const formData = new FormData();
                             formData.append(deleteWhat+'Name', edit[0]);
@@ -203,62 +220,30 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                                     return;
                                 }
                                 const result = await response.json();
-                                const parseResult = JSON.parse(result.data);
-                                serverResponseFetch = {
-                                    data: parseResult[1],
-                                    success: parseResult[2],
-                                    error: parseResult[4],
-                                    message: parseResult[3]
-                                }
-                                if(serverResponseFetch.data){
-                                    emptiedArray((deleteWhat === 'unit') ? unitItems : agentItems);
-                                    serverResponseFetch.data?.forEach((data: any) => {
-                                        if(deleteWhat === 'unit'){
-                                            unitItems.push({
-                                                id: data.id,
-                                                name: data.nameUnit.toLocaleUpperCase(),
-                                                name2: (data.fromTime + '-' + data.toTime) || 'Tidak Dikenali',
-                                                event: (() => {
-                                                    pengaturanClick2();
-                                                    emptiedArray(edit);
-                                                    edit.push(data.nameUnit);
-                                                }),
-                                                editEvent: (() => {
-                                                    emptiedArray(edit);
-                                                    edit.push(data.nameUnit);
-                                                    hapusUnitMsgBox(deleteWhat);
-                                                })
-                                            })
-                                        }else if(deleteWhat === 'agent'){
-                                            agentItems.push({
-                                                id: data.id,
-                                                name: data.nameAgent.toLocaleUpperCase(),
-                                                name2: data.createdByWho || 'Tidak Dikenali',
-                                                event: (() => {
-                                                    pengaturanClick2();
-                                                    emptiedArray(edit);
-                                                    edit.push(data.nameAgent);
-                                                    edit.push(data.id);
-                                                }),
-                                                editEvent: (() => {
-                                                    emptiedArray(edit);
-                                                    edit.push(data.nameAgent);
-                                                    edit.push(data.id);
-                                                    hapusUnitMsgBox(deleteWhat);
-                                                })
-                                            })
-                                        }
-                                    })
-                                }
+                                await invalidateAll();
+                                refreshData();
+                                deleting = false;
                             }catch (error) {console.log(error);}
                         }
                     }
                     newMsgBox = undefined!
                 })
             }
+        if(!form?.error){
+            newMsgBox = {
+                Title: "Berhasil",
+                Message: "Berhasil hapus " + deleteWhat,
+                NotificationType: 'info',
+                ButtonType: 'ok',
+                Action: () => {
+                    
+                }
+            }
+        }
     }
     let addAccount: boolean = $state(false);
     let forAccount: number = $state(0);
+    let deleting: boolean = $state(false);
     const menuClick: Array<boolean> = $state([false, false, false, false, false, false]);
     let subMenu: SubMenu = $state({pengaturan: 0, laporan: 0, currentItemEditID: -1, titleSubMenu: ""});
     let itemEdit: boolean = $state(false);
@@ -280,71 +265,81 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
     let { data, form }: PageProps = $props();
     let getData: any = $state(false);
     let editData: any = $state(false);
-    if(data){
-        if(data.error) getData = true;
-        else {
-            data.dataAkun?.forEach((data) => {
-                userItems.push({
-                    id: data.id,
-                    name: data.username.toLocaleUpperCase(),
-                    name2: accountTypeMap[data.accountType] || 'Tidak Dikenali',
-                    event: (() => {
-                        pengaturanClick2();
-                        emptiedArray(edit);
-                        edit.push(data.username);
-                        edit.push(data.id)
-                    }),
-                    editEvent: (() => {
-                        emptiedArray(edit);
-                        edit.push(data.username);
-                        edit.push(data.id)
-                        forAccount = -1;
-                        editData = true;
-                        getData = false;
+    function refreshData() {
+        emptiedArray(userItems);
+        emptiedArray(unitItems);
+        emptiedArray(agentItems);
+        if(data){
+            if(!data.error) {
+                data.dataAkun?.forEach((data) => {
+                    userItems.push({
+                        id: data.id,
+                        name: data.username.toLocaleUpperCase(),
+                        name2: accountTypeMap[data.accountType] || 'Tidak Dikenali',
+                        event: (() => {
+                            pengaturanClick2();
+                            emptiedArray(edit);
+                            edit.push(data.username);
+                            edit.push(data.id)
+                        }),
+                        editEvent: (() => {
+                            emptiedArray(edit);
+                            edit.push(data.username);
+                            edit.push(data.id)
+                            forAccount = -1;
+                            editData = true;
+                            getData = false;
+                        })
                     })
                 })
-            })
-            data.dataUnits?.forEach((data) => {
-                unitItems.push({
-                    id: data.id,
-                    name: data.nameUnit.toLocaleUpperCase(),
-                    name2: (data.fromTime && data.toTime) ? data.fromTime + " - " + data.toTime : null,
-                    event: (() => {
-                        pengaturanClick2();
-                        emptiedArray(edit);
-                        edit.push(data.nameUnit);
-                        
-                    }),
-                    editEvent: (() => {
-                        emptiedArray(edit);
-                        edit.push(data.nameUnit);
-                        hapusUnitMsgBox('unit');
-                    })
+                data.dataUnits?.forEach((data) => {
+                    unitItems.push({
+                        id: data.id,
+                        name: data.nameUnit.toLocaleUpperCase(),
+                        name2: (data.fromTime && data.toTime) ? data.fromTime + " - " + data.toTime : null,
+                        event: (() => {
+                            pengaturanClick2();
+                            emptiedArray(edit);
+                            edit.push(data.nameUnit);
+                            
+                        }),
+                        editEvent: (() => {
+                            emptiedArray(edit);
+                            edit.push(data.nameUnit);
+                            hapusUnitMsgBox('unit');
+                        })
+                    });
+                    rooms.push({
+                        id: data.id,
+                        name: data.nameUnit,
+                        times: (data.fromTime && data.toTime) ? data.fromTime + " - " + data.toTime : '',
+                        state: data.unitState ?? ''
+                    });
                 })
-            })
-            data.dataAgents?.forEach(data => {
-                agentItems.push({
-                    id: data.id,
-                    name: data.nameAgent.toLocaleUpperCase(),
-                    name2: data.createdByWho,
-                    event: (() => {
-                        pengaturanClick2();
-                        emptiedArray(edit);
-                        edit.push(data.nameAgent);
-                        edit.push(data.id);
-                        
-                    }),
-                    editEvent: (() => {
-                        emptiedArray(edit);
-                        edit.push(data.nameAgent);
-                        edit.push(data.id);
-                        hapusUnitMsgBox('unit');
-                    })
+                data.dataAgents?.forEach(data => {
+                    agentItems.push({
+                        id: data.id,
+                        name: data.nameAgent.toLocaleUpperCase(),
+                        name2: data.createdByWho,
+                        event: (() => {
+                            pengaturanClick2();
+                            emptiedArray(edit);
+                            edit.push(data.nameAgent);
+                            edit.push(data.id);
+                            
+                        }),
+                        editEvent: (() => {
+                            emptiedArray(edit);
+                            edit.push(data.nameAgent);
+                            edit.push(data.id);
+                            hapusUnitMsgBox('unit');
+                        })
+                    });
                 });
-            });
+            }
         }
-        //console.log(unitItems);
     }
+    refreshData();
 </script>
 
 {#if newMsgBox}
@@ -357,47 +352,6 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
 
 <!-- <svelte:window onbeforeunload={beforeUnload} /> -->
 <!-- HERE THE MSG BOX FOR ERROR, LOGOUT, DELETE CONFIRMATION -->
-{#if serverResponseFetch?.success}
-    <MessageBox title="Berhasil dihapus" type="info" buttonType="ok" handleResult={
-        async () => {
-            await invalidateAll();
-            if (!pengaturanAturan2[0] && pengaturanAturan2[1]) {
-                pengaturanClick2();
-                addAccount = false;
-                forAccount = 0;
-                editData = false;
-                serverResponseFetch = undefined!;
-                return;
-            }
-        }
-    }>
-        <div class="w-full h-fit flex flex-col justify-between items-center object-center text-center">
-            <p class=" font-bold">Berhasil: </p>
-            <p class=" text-amber-300">{serverResponseFetch?.message}</p>
-        </div>
-    </MessageBox>
-{:else if serverResponseFetch}
-    {#if !serverResponseFetch.success}
-        <MessageBox title="Gagal dihapus" type="info" buttonType="ok" handleResult={
-            async () => {
-                await invalidateAll();
-                if (!pengaturanAturan2[0] && pengaturanAturan2[1]) {
-                    pengaturanClick2();
-                    addAccount = false;
-                    forAccount = 0;
-                    editData = false;
-                    serverResponseFetch = undefined!;
-                    return;
-                }
-            }
-        }>
-            <div class="w-full h-fit flex flex-col justify-between items-center object-center text-center">
-                <p class=" font-bold">Masukan Error: </p>
-                <p class=" text-amber-300">{serverResponseFetch.message}</p>
-            </div>
-        </MessageBox>
-    {/if}
-{/if}
 
 {#if (form?.error && getData) || (data?.error && getData)}
     <MessageBox title="Masalah Terjadi!" type="warning" buttonType="ok" handleResult={
@@ -407,11 +361,11 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
         }
     }>
         <div class="w-full h-fit flex flex-col justify-between items-center object-center text-center">
-            {#if form}
+            {#if form?.description}
                 <p class=" font-bold">Masukan Error: </p>
                 <p class=" text-amber-300">{form?.description}</p>
             {/if}
-            {#if data}
+            {#if data?.description}
                 <p class=" font-bold">Masukan Error: </p>
                 <p class=" text-amber-300">{data?.description}</p>
             {/if}
@@ -421,7 +375,8 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
     <MessageBox title="Hapus Akun" type="warning" buttonType='yesno' handleResult={
         async (result: any) => {
             if(result){
-                if(result === 'yes'){
+                if(result === 'yes' && !deleting){
+                    deleting = true;
                     const formData = new FormData();
                     formData.append('id', edit[1]);
                     formData.append('username', edit[0]);
@@ -441,39 +396,24 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                             return;
                         }
                         const result = await response.json();
-                        const parseResult = JSON.parse(result.data);
-                        serverResponseFetch = {
-                            data: parseResult[1],
-                            success: parseResult[2],
-                            error: parseResult[4],
-                            message: parseResult[3]
-                        }
-                        if(serverResponseFetch.data){
-                            emptiedArray(userItems);
-                            serverResponseFetch.data?.forEach((data: any) => {
-                                userItems.push({
-                                    id: data.id,
-                                    name: data.username.toLocaleUpperCase(),
-                                    name2: accountTypeMap[(data.accountType as keyof typeof accountTypeMap)] || 'Tidak Dikenali',
-                                    event: (() => {
-                                        pengaturanClick2();
-                                        emptiedArray(edit);
-                                        edit.push(data.username);
-                                        edit.push(data.id)
-                                    }),
-                                    editEvent: (() => {
-                                        emptiedArray(edit);
-                                        edit.push(data.username);
-                                        edit.push(data.id)
-                                        forAccount = -1;
-                                        editData = true;
-                                        getData = false;
-                                    })
-                                })
-                            })
-                        }
-                        
+                        await invalidateAll();
+                        refreshData();
+                        console.log(userItems);
                     }catch (error) {console.log(error);}
+                    newMsgBox = {
+                        Title: (form?.error) ? 'Gagal' : 'Berhasil',
+                        Message: (form?.error) ? (form?.error as string) : "Data berhasil dihapus",
+                        NotificationType: 'info',
+                        ButtonType: 'ok',
+                        Action: (() => {
+                            pengaturanClick2()
+                            submiting = false;
+                            deleting = false;
+                            newMsgBox = undefined!;
+                        })
+                    }
+                }else if(result === 'no' && !deleting){
+                    pengaturanClick2();
                 }
             }
             editData = false;
@@ -633,40 +573,32 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                 getData = false;
                 submiting = false;
             }}>
-                {#if (addAccount && !form?.horay)}
-                    <form action="?/{((edit.length != 0)) ? 'editAccount' : 'addAccount'}" method="post" class="flex flex-col w-full max-w-sm h-fit gap-2" use:enhance={() => {
+                {#if (addAccount && !form?.horay) || (edit.length != 0) || addAccount}
+                    <form onsubmit={() => {
+                        newMsgBox = {
+                            Title: "LOADING",
+                            Message: "Tunggu Dulu",
+                            NotificationType: 'info',
+                        };
+                    }} action="?/{((edit.length != 0)) ? 'editAccount' : 'addAccount'}" method="post" class="flex flex-col w-full max-w-sm h-fit gap-2" use:enhance={() => {
                         return async ({update}) => {
-                            newMsgBox = {
-                                Title: "LOADING",
-                                Message: "Tunggu Dulu",
-                                NotificationType: 'info',
-                            };
                             submiting = true;
                             await update();
                             newMsgBox = undefined!;
-                            emptiedArray(userItems);
-                            form?.dataAkun?.forEach((data) => {
-                                userItems.push({
-                                    id: data.id,
-                                    name: data.username.toLocaleUpperCase(),
-                                    name2: accountTypeMap[data.accountType] || 'Tidak Dikenali',
-                                    event: (() => {
-                                        pengaturanClick2();
-                                        emptiedArray(edit);
-                                        edit.push(data.username);
-                                        edit.push(data.id)
-                                    }),
-                                    editEvent: (() => {
-                                        emptiedArray(edit);
-                                        edit.push(data.username);
-                                        edit.push(data.id)
-                                        forAccount = -1;
-                                        editData = true;
-                                        getData = false;
-                                    })
-                                })
-                            });
-                            getData = true;
+                            emptiedArray(edit);
+                            await invalidateAll();
+                            refreshData();
+                            newMsgBox = {
+                                Title: (form?.error) ? "Gagal" : "Berhasil",
+                                Message: (form?.error) ? (form?.error as string) : "Berhasil tambah akun",
+                                NotificationType: (form?.error) ? 'danger' : 'info',
+                                ButtonType: 'ok',
+                                Action: () => {
+                                    pengaturanClick2();
+                                    submiting = false;
+                                    newMsgBox = undefined!;
+                                }
+                            }
                             
                         }
                     }}>
@@ -688,24 +620,6 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                         <input type="hidden" name="editAkunId" class="" value={(edit) ? edit[1] : ''}>
                         <button disabled={submiting} type="submit" class="flex w-full h-fit bg-gradient-to-b from-green-500 via-green-600 to-green-700 justify-center items-center text-center text-2xl rounded-2xl font-sans"> SUBMIT </button>
                     </form>
-                {:else if getData}
-                    <MessageBox title="Berhasil" type="info" buttonType="ok" 
-                        handleResult={
-                            () => {
-                                if (!pengaturanAturan2[0] && pengaturanAturan2[1]) {
-                                    pengaturanClick2();
-                                    addAccount = false;
-                                    forAccount = 0;
-                                    return;
-                                }
-                                getData = false;    
-                            }
-                        }
-                    >
-                        <div class="w-full h-fit flex justify-between items-center object-center text-center">
-                            <p class=" font-bold text-amber-300">Sudah berhasil tambah akun</p>
-                        </div>
-                    </MessageBox>
                 {/if}
             </ListingComp>
         <!-- HERE LAY THE ADD UNIT -->
@@ -716,38 +630,21 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                 submiting = false;
             }}>
                 {#if !newMsgBox}
-                    <form class="flex flex-col w-full max-w-sm h-fit gap-2" action="?/{(edit === undefined || (edit as Array<string>).length != 0) ? 'editUnit' : 'addUnit'}" method="post" use:enhance={() => {
+                    <form onsubmit={() => {
+                        newMsgBox = {
+                            Title: "LOADING",
+                            Message: "Tunggu Dulu",
+                            NotificationType: 'info',
+                        };
+                    }} class="flex flex-col w-full max-w-sm h-fit gap-2" action="?/{(edit === undefined || (edit as Array<string>).length != 0) ? 'editUnit' : 'addUnit'}" method="post" use:enhance={() => {
                         return async ({update}) => {
-                            newMsgBox = {
-                                Title: "LOADING",
-                                Message: "Tunggu Dulu",
-                                NotificationType: 'info',
-                            };
                             submiting = true;
                             await update();
                             newMsgBox = undefined!;
                             submiting = false;
                             //console.log(edit);
                             emptiedArray(edit);
-                            emptiedArray(unitItems);
                             if(!form?.error){
-                                form?.dataUnits?.forEach((data) => {
-                                    unitItems.push({
-                                        id: data.id,
-                                        name: data.nameUnit.toLocaleUpperCase(),
-                                        name2: (data.fromTime && data.toTime) ? data.fromTime + " - " + data.toTime : null,
-                                        event: (() => {
-                                            pengaturanClick2();
-                                            emptiedArray(edit);
-                                            edit.push(data.nameUnit);
-                                        }),
-                                        editEvent: (() => {
-                                            emptiedArray(edit);
-                                            edit.push(data.nameUnit);
-                                            hapusUnitMsgBox('unit');
-                                        })
-                                    })
-                                })
                                 newMsgBox = {
                                     Title: "Berhasil Ditambahkan",
                                     Message: "Unit berhasil ditambahkan",
@@ -759,6 +656,8 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                                         newMsgBox = undefined!;
                                     })
                                 }
+                                await invalidateAll();
+                                refreshData();
                             }else{
                                 newMsgBox = {
                                     Title: "Gagal Ditambahkan",
@@ -798,41 +697,24 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                 submiting = false;
             }}>
                 {#if !newMsgBox}
-                    <form class="flex flex-col w-full max-w-sm h-fit gap-2" action="{(edit === undefined || (edit as Array<string>).length != 0) ? '?/editAgent' : 'addAgent'}" method="post" use:enhance={() => {
+                    <form onsubmit={() => {
+                        newMsgBox = {
+                            Title: "LOADING",
+                            Message: "Tunggu Dulu",
+                            NotificationType: 'info',
+                        };
+                    }} class="flex flex-col w-full max-w-sm h-fit gap-2" action="{(edit === undefined || (edit as Array<string>).length != 0) ? '?/editAgent' : 'addAgent'}" method="post" use:enhance={() => {
                         return async ({update}) => {
-                            newMsgBox = {
-                                Title: "LOADING",
-                                Message: "Tunggu Dulu",
-                                NotificationType: 'info',
-                            };
                             submiting = true;
                             await update();
                             newMsgBox = undefined!
                             submiting = false;
                             //console.log(edit);
                             emptiedArray(edit);
-                            emptiedArray(agentItems);
                             if(!form?.error){
-                                form?.dataAgents?.forEach(data => {
-                                    agentItems.push({
-                                        id: data.id,
-                                        name: data.nameAgent.toLocaleUpperCase(),
-                                        name2: data.createdByWho,
-                                        event: (() => {
-                                            pengaturanClick2();
-                                            emptiedArray(edit);
-                                            edit.push(data.nameAgent);
-                                            edit.push(data.id);
-                                        }),
-                                        editEvent: (() => {
-                                            emptiedArray(edit);
-                                            edit.push(data.nameAgent);
-                                            edit.push(data.id);
-                                            hapusUnitMsgBox('unit');
-                                        })
-                                    });
-                                });
-                                newMsgBox = {
+                                await invalidateAll();
+                                refreshData();
+                                newMsgBox ={
                                     Title: "Berhasil Ditambahkan",
                                     Message: "Unit berhasil ditambahkan",
                                     NotificationType: 'info',
@@ -880,7 +762,24 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
     {:else if subMenu.pengaturan < 0 && subMenu.laporan < 0}
         {#if menuClick[0]}
         <ListingComp editable={false} items={[]} ifItems={false} ifOther={true} title="Room" itemEdit={false} >
-
+            {#each rooms as unit (unit.id)}
+            <!-- DO SOMETHING WHEN CLICK OR NOT AND CHANGE COLOR BASED ON UNIT STATE -->
+                <button class="
+                  w-full text-white flex-col text-3xl font-bold p-5 rounded-2xl
+                    bg-gradient-to-b {(unit.state == 'Ready') ? "from-green-500 to-green-700" : (unit.state == 'StandBy') ? "from-yellow-500 to-yellow-700" : (unit.state == 'Working') ? "from-red-500 to-red-700" : "from-gray-500 to-gray-700"}
+                    shadow-md hover:shadow-lg
+                    active:translate-y-0.5
+                    transition-all duration-200 ease-in-out
+                    focus:outline-none focus:ring-4 focus:ring-blue-400
+                  "
+                  onclick={() => {}}
+                >
+                  <p class=" font-bold text-[2rem] text-center">{unit.name}</p>
+                  {#if unit.times != ""}
+                    <p class=" text-[1rem] text-center">{unit.times}</p>
+                  {/if}
+                </button>
+            {/each}
         </ListingComp>
         {:else if menuClick[1]}
         <ListingComp editable={false} items={[]} ifItems={false} ifOther={true} title="Masalah" itemEdit={false} >
