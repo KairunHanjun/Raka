@@ -48,36 +48,56 @@
 </script>
 
 <!-- Kontainer Utama dengan gradien dan bentuk yang disederhanakan -->
-<div 
-  class="
-    w-full max-w-md text-white
-    bg-gradient-to-b from-blue-600 to-indigo-800
-    rounded-b-[9rem] shadow-2xl
-    p-6 flex flex-col
-  "
->
-  <!-- Header: Tombol kembali dan tanggal -->
-  <header class="flex items-center gap-4">
-    <!-- svelte-ignore a11y_consider_explicit_label -->
-    <button onclick={handleBackClick} class="p-2 rounded-full hover:bg-white/10 transition-colors">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-      </svg>
-    </button>
-    <span class="font-semibold text-lg">{formattedDate}</span>
-  </header>
-
-  <!-- Konten Utama: Waktu dan Salam -->
-  <main class="flex-grow flex flex-col items-center justify-center text-center">
-    <div class="text-9xl font-bold tracking-tight">
-      {formattedTime}
-    </div>
-    <div class="mt-4 text-4xl font-light">
-      {greeting}
-    </div>
-    <div class="text-5xl font-bold">
-      {name}
-    </div>
-  </main>
+<div class="w-[428px] h-[239px]">
+  <svg
+    width="428"
+    height="70"
+    viewBox="0 0 428 70"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    class="absolute left-[-0.5px] top-[169.24px]"
+    preserveAspectRatio="none"
+  >
+    <ellipse cx="214" cy="34.6306" rx="214" ry="34.6306" fill="#324494"></ellipse>
+  </svg>
+  <div
+    class="w-[428px] h-[205.83px] absolute left-[-0.5px] top-[-0.5px] bg-gradient-to-b from-[#5472f8] to-[#314392]"
+  ></div>
+  <button onclick={handleBackClick} aria-label="i">
+      <svg
+      width="50"
+      height="50"
+      viewBox="0 0 50 50"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      class="w-[50px] h-[50px] absolute left-[11px] top-[9px]"
+      preserveAspectRatio="none"
+    >
+      <path
+        d="M16.3021 27.0834L27.9687 38.75L25 41.6667L8.33331 25L25 8.33337L27.9687 11.25L16.3021 22.9167H41.6666V27.0834H16.3021Z"
+        fill="#FEF7FF"
+      ></path>
+    </svg>
+  </button>
+  <p
+    class="w-[281px] h-[46px] absolute left-[73px] top-[175px] text-[35px] font-bold text-center text-white"
+  >
+    {name}
+  </p>
+  <p
+    class="w-[281px] h-[37px] absolute left-[73px] top-[138px] text-3xl font-medium text-center text-white"
+  >
+    {greeting}
+  </p>
+  <p
+    class="w-[281px] h-[37px] absolute left-[73px] top-[21px] text-xl font-medium text-center text-white"
+  >
+    {formattedDate}
+  </p>
+  <p
+    class="w-[281px] h-24 absolute left-[73px] top-[42px] text-[80px] font-bold text-center text-white"
+  >
+    {formattedTime}
+  </p>
 </div>
 

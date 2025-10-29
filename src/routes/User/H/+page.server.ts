@@ -15,21 +15,21 @@ export const load: PageServerLoad = async ({ locals }) => {
 		throw redirect(302, '/');
 	}
 	try {
-	const dataAkun = await db.select({
-		id: accounts.id,
-		username: accounts.username,
-		accountType: accounts.accountType
-	}).from(accounts).where(and(ne(accounts.accountType, 'H'), eq(accounts.createdByWho, locals.user.username)));
-	//Get Unit
-	const dataUnits = await db.select().from(units).orderBy(asc(units.unitState));
-	//Get Agent
-	const dataAgents = await db.select().from(agents).where(eq(agents.createdByWho, locals.user.username));
-	//TODO: Get Masalah
+		const dataAkun = await db.select({
+			id: accounts.id,
+			username: accounts.username,
+			accountType: accounts.accountType
+		}).from(accounts).where(and(ne(accounts.accountType, 'H'), eq(accounts.createdByWho, locals.user.username)));
+		//Get Unit
+		const dataUnits = await db.select().from(units).orderBy(asc(units.unitState));
+		//Get Agent
+		const dataAgents = await db.select().from(agents).where(eq(agents.createdByWho, locals.user.username));
+		//TODO: Get Masalah
 
-	//TODO: Get Absensi
+		//TODO: Get Absensi
 
-	//console.log(dataUnits);
-	const userNow = locals.user;
+		//console.log(dataUnits);
+		const userNow = locals.user;
 		return {
 			dataAkun,
 			dataUnits,

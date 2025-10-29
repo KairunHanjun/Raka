@@ -446,17 +446,17 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
         }else if(subMenu.laporan >= 1){
             subMenu.laporan--;
             subMenu.titleSubMenu = "Laporan"
-        }else{
+        }else if(subMenu.laporan != 0 && subMenu.pengaturan != 0){
             subMenu.pengaturan = 0;
             subMenu.laporan = 0;
-        }
-        if(menuClick.find(x => x === true)){
-            for (let i = 0; i < menuClick.length; i++) {
-                menuClick[i] = false;
+        }else{
+            if(menuClick.find(x => x === true)){
+                for (let i = 0; i < menuClick.length; i++) {
+                    menuClick[i] = false;
+                }
+                return;
             }
-            return;
-        }
-        newMsgBox = {
+            newMsgBox = {
                 Title: "Keluar",
                 Message: "Apakah yakin ingin keluar?",
                 NotificationType: 'warning',
@@ -479,6 +479,9 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                     }
                 }
             }
+        }
+        
+        
     }} name={(data?.userNow?.username ?? 'User').toUpperCase()}/>
     {#if subMenu.pengaturan === 0 && subMenu.laporan === 0}
         <div class="h-fit w-fit flex flex-col justify-center items-center gap-4">
@@ -490,19 +493,25 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                 subMenu.pengaturan = -1;
                 subMenu.laporan = -1;
                 }}>
-                <div class="flex flex-col w-full h-fit justify-start gap-2">
-                    <div class="flex w-full h-fit justify-center items-center">
-                        <div class="w-6 h-6 bg-yellow-600 rounded-md me-3"></div>
-                        <h2 class="text-white text-4xl font-bold">Proccess : {5} Unit</h2>
-                    </div>
-                    <div class="flex w-full h-fit justify-between">
+                <div class="flex w-full h-fit justify-between gap-2">
+                    <div class="flex flex-col w-full h-fit justify-between">
                         <div class="flex w-fit h-fit items-center object-center">
                             <div class="w-3 h-3 bg-green-600 rounded-sm me-2"></div>
-                            <h2 class="text-white text-xl font-bold">Ready : {10} Unit</h2>
+                            <h2 class="text-white text-[1rem] font-bold">Ready : {(rooms.filter(room => room.state === 'Ready').length)} Unit</h2>
                         </div>
                         <div class="flex w-fit h-fit items-center object-center">
                             <div class="w-3 h-3 bg-red-600 rounded-sm me-2"></div>
-                            <h2 class="text-white text-xl font-bold">Used : {5} Unit</h2>
+                            <h2 class="text-white text-[1rem] font-bold">Used : {(rooms.filter(room => room.state === 'Working').length)} Unit</h2>
+                        </div>
+                    </div>
+                    <div class="flex flex-col w-full h-fit justify-between">
+                        <div class="flex w-fit h-fit items-center object-center">
+                            <div class="w-3 h-3 bg-yellow-600 rounded-sm me-2"></div>
+                            <h2 class="text-white text-[1rem] font-bold">Process : {(rooms.filter(room => room.state === 'StandBy').length)} Unit</h2>
+                        </div>
+                        <div class="flex w-fit h-fit items-center object-center">
+                            <div class="w-3 h-3 bg-gray-600 rounded-sm me-2"></div>
+                            <h2 class="text-white text-[1rem] font-bold">Closed : {(rooms.filter(room => room.state === 'Closed').length)} Unit</h2>
                         </div>
                     </div>
                 </div>
@@ -518,7 +527,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                 <div class="flex flex-col w-full h-fit justify-start gap-2">
                     <div class="flex w-full h-fit justify-center items-center">
                         <div class="w-6 h-6 bg-red-600 rounded-md me-3"></div>
-                        <h2 class="text-white text-4xl font-bold">Masalah : {3} Unit</h2>
+                        <h2 class="text-white text-4xl font-bold">Masalah : {0} Unit</h2>
                     </div>
                 </div>
             </TopActionCard>
@@ -732,7 +741,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                             Message: "Tunggu Dulu",
                             NotificationType: 'info',
                         };
-                    }} class="flex flex-col w-full max-w-sm h-fit gap-2" action="{(edit === undefined || (edit as Array<string>).length != 0) ? '?/editAgent' : 'addAgent'}" method="post" use:enhance={() => {
+                    }} class="flex flex-col w-full max-w-sm h-fit gap-2" action="{(edit === undefined || (edit as Array<string>).length != 0) ? '?/editAgent' : '?/addAgent'}" method="post" use:enhance={() => {
                         return async ({update}) => {
                             await update();
                             newMsgBox = undefined!
@@ -788,7 +797,29 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
         {/if}
     {:else if subMenu.pengaturan < 0 && subMenu.laporan < 0}
         {#if menuClick[0]}
-        <ListingComp editable={false} items={[]} ifItems={false} ifOther={true} title="Room" itemEdit={false} >
+        <ListingComp editable={false} items={[]} ifItems={false} ifOther={false} title="Room" itemEdit={true} >
+            <div class="flex w-full h-fit justify-between gap-2 bg-blue-950 rounded-2xl p-2">
+                <div class="flex flex-col w-full h-fit justify-between">
+                    <div class="flex w-fit h-fit items-center object-center">
+                        <div class="w-3 h-3 bg-green-600 rounded-sm me-2"></div>
+                        <h2 class="text-white text-[1rem] font-bold">Ready : {(rooms.filter(room => room.state === 'Ready').length)} Unit</h2>
+                    </div>
+                    <div class="flex w-fit h-fit items-center object-center">
+                        <div class="w-3 h-3 bg-red-600 rounded-sm me-2"></div>
+                        <h2 class="text-white text-[1rem] font-bold">Used : {(rooms.filter(room => room.state === 'Working').length)} Unit</h2>
+                    </div>
+                </div>
+                <div class="flex flex-col w-full h-fit justify-between">
+                    <div class="flex w-fit h-fit items-center object-center">
+                        <div class="w-3 h-3 bg-yellow-600 rounded-sm me-2"></div>
+                        <h2 class="text-white text-[1rem] font-bold">Process : {(rooms.filter(room => room.state === 'StandBy').length)} Unit</h2>
+                    </div>
+                    <div class="flex w-fit h-fit items-center object-center">
+                        <div class="w-3 h-3 bg-gray-600 rounded-sm me-2"></div>
+                        <h2 class="text-white text-[1rem] font-bold">Closed : {(rooms.filter(room => room.state === 'Closed').length)} Unit</h2>
+                    </div>
+                </div>
+            </div>
             {#each rooms as unit (unit.id)}
             <!-- DO SOMETHING WHEN CLICK OR NOT AND CHANGE COLOR BASED ON UNIT STATE -->
                 <button class="
