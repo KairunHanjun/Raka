@@ -19,21 +19,24 @@ const config = {
                     // PWA options like manifest, icons, workbox configuration
                     // Example:
                     manifest: {
-                        name: 'My SvelteKit PWA',
-                        short_name: 'Svelte PWA',
-                        theme_color: '#ffffff',
-                        icons: [
-                            {
-                                src: '/pwa-192x192.png',
-                                sizes: '192x192',
-                                type: 'image/png'
-                            },
-                            {
-                                src: '/pwa-512x512.png',
-                                sizes: '512x512',
-                                type: 'image/png'
-                            }
-                        ]
+                    name: "RoomQu",
+                    short_name: "RQ",
+                    start_url: "/",
+                    display: "standalone",
+                    background_color: "#ffffff",
+                    theme_color: "#0d9488",
+                    icons: [
+                        {
+                            src: "/icons/icon-192.png",
+                            sizes: "192x192",
+                            type: "image/png"
+                        },
+                        {
+                            src: "/icons/icon-512.png",
+                            sizes: "512x512",
+                            type: "image/png"
+                        }
+                    ]
                     }
                 })
             ]

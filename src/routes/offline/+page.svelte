@@ -25,7 +25,7 @@
 
 
 
-    let { data, form }: PageProps = $props();
+    let { data }: PageProps = $props();
     let dataLogin: DataLogin | undefined= $state();
     const buttonText = ["Front Office", "House Keeping", "Teknisi", "Host"]
     const selamatDatangtext = ["Selamat Datang", "Login Sebagai"]
