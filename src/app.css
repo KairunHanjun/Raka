@@ -1,3 +1,22 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/forms';
 @plugin '@tailwindcss/typography';
+
+
+
+/* Chrome, Safari, Edge, Opera */
+.no-arrows::-webkit-outer-spin-button,
+.no-arrows::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Firefox */
+.no-arrows[type="number"] {
+    -moz-appearance: textfield;
+}
+
+/* General (for other browsers or future compatibility) */
+.no-arrows[type="number"] {
+    appearance: textfield;
+}

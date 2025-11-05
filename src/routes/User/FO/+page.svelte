@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { enhance } from "$app/forms";
+	import { goto, invalidateAll } from "$app/navigation";
 	import ActionCard from "$lib/comp/actionCard.svelte";
 	import Header from "$lib/comp/header.svelte";
 	import ListingComp from "$lib/comp/listingComp.svelte";
@@ -7,6 +9,7 @@
     import type { PageProps } from "./$types";
     let { data, form }: PageProps = $props();
 
+    const editOther: string[] = $state([]);
     const accountTypeMap = {
         'FO': 'Front Office',
         'HK': 'House Keeping',
@@ -19,6 +22,8 @@
         name: string;
         times: string;
         state: string;
+        pending: boolean;
+        kebersihan: string | null;
     }> = $state([]);
 
     const newMsgBox: Array<{
@@ -54,6 +59,8 @@
 
     function refreshData() {
         if(data){
+            emptiedArray(Items);
+            emptiedArray(rooms);
             data.dataUnits?.forEach(data => {
                 Items.push({
                     id: data.id,
@@ -71,7 +78,9 @@
                     id: data.id,
                     name: data.nameUnit,
                     times: (data.fromTime && data.toTime) ? data.fromTime + " - " + data.toTime : '',
-                    state: data.unitState ?? ''
+                    state: data.unitState ?? '',
+                    pending: data.pending ?? false,
+                    kebersihan: data.kebersihan
                 });
             })
         }
@@ -87,30 +96,26 @@
         const match = timeString.match(timeRegex);
 
         if (!match) {
-            console.error("Invalid time string format.");
             return null;
         }
-
         let hours = parseInt(match[1], 10) + addHours;
         const minutes = parseInt(match[2], 10) + addMinutes;
-        const period = match[3] ? match[3].toUpperCase() : null;
-
-        // Adjust hours for AM/PM format
-        if (period === 'PM' && hours !== 12) {
-            hours += 12;
-        } else if (period === 'AM' && hours === 12) {
-            hours = 0; // 12 AM is 00:00 in 24-hour format
-        }
-
+        
         // Basic validation for hours and minutes
-        if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
-            console.error("Invalid hour or minute value.");
-            return null;
-        }
+        if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) hours = hours - 24
 
         return { hours, minutes };
     }
 
+    function updateDataToTime(): string{
+        if(!bindThisSelect?.value.includes("Kustom")){
+            const udin = parseTimeStringToHoursMinutes(bindThisInput?.value ?? "", parseInt(bindThisSelect?.value ?? "0", 10));
+            if(udin){
+                return ((udin.hours < 10) ? "0" : "") + udin.hours + ":" + ((udin.minutes < 10) ? "0" : "") + udin.minutes;
+            }
+        }
+        return "";
+    }
 
     let loading: boolean = false;
     let edit: boolean = $state(false);
@@ -119,9 +124,16 @@
     let menuClick: string | undefined = $state(undefined);
     let bindThisSelect: HTMLSelectElement | undefined = $state(undefined);
     let bindThisInput: HTMLInputElement | undefined = $state(undefined);
+    let bindThisSubmit: HTMLButtonElement | undefined = $state(undefined);
     let now: Date = $state(new Date());
     let hours = $derived(now.getHours());
     let minutes = $derived(now.getMinutes());
+    let updateWaktu = $state('');
+    let JamorHari = $state("");
+    let submiting = $state(false);
+    let error = $state(false);
+    let lihatAbsen: boolean = $state(false);
+    let bindThisButton: HTMLButtonElement | undefined = $state(undefined);
 
     $effect(() => {
         const timer = setInterval(() => {
@@ -134,21 +146,24 @@
     refreshData();
 </script>
 
-{#if (form?.error) || (data?.error)}
-    <MessageBox title="Masalah Terjadi!" type="warning" buttonType="ok" handleResult={() => {
-
-    }}>
-        <div class="w-full h-fit flex flex-col justify-between items-center object-center text-center">
-            {#if form?.description}
-                <p class=" font-bold">Masukan Error: </p>
-                <p class=" text-amber-300">{form?.description}</p>
-            {/if}
-            {#if data?.description}
-                <p class=" font-bold">Masukan Error: </p>
-                <p class=" text-amber-300">{data?.description}</p>
-            {/if}
-        </div>
-    </MessageBox>
+{#if ((form?.error) || (data?.error))}
+    {error = true}
+    {#if error}
+        <MessageBox title="Masalah Terjadi!" type="warning" buttonType="ok" handleResult={() => {
+            error = false;
+        }}>
+            <div class="w-full h-fit flex flex-col justify-between items-center object-center text-center">
+                {#if form?.error}
+                    <p class=" font-bold">Masukan Error: </p>
+                    <p class=" text-amber-300">{form?.error}</p>
+                {/if}
+                {#if data?.description}
+                    <p class=" font-bold">Masukan Error: </p>
+                    <p class=" text-amber-300">{data?.description}</p>
+                {/if}
+            </div>
+        </MessageBox>
+    {/if}
 {/if}
 
 {#if newMsgBox.length > 0}
@@ -161,42 +176,45 @@
     {/each}
 {/if}
 
-<div class="h-fit w-screen flex flex-col justify-center items-center gap-4">
-    <div class="h-fit w-fit relative" >
-        <Header name={data?.userNow.username.toUpperCase() ?? "User"} onclick={() => {
-            if(edit){
-                edit = false;
-                return;
-            }
-            if(menuClick) {
-                menuClick = undefined;
-                return;
-            }
-            newMsgBox.push({
-                Title: "Keluar",
-                Message: "Apakah yakin ingin keluar?",
-                NotificationType: 'warning',
-                ButtonType: 'yesno',
-                Action: async (result: any) => {
-                    if(result){
-                        if(result === 'yes' && !loading){
-                            loading = true;
-                            try{
-                                await fetch('/logout', {
-                                    method: 'GET'
-                                });
-                                loading = false;
-                                deleteArray(newMsgBox, "Keluar");
-                                location.reload();
-                            }catch (error) {console.log(error);}
-                        }else if(result === 'no' && !loading){
+<div class="h-fit w-screen flex flex-col justify-center! items-center gap-4">
+    <Header name={data?.userNow.username.toUpperCase() ?? "User"} onclick={() => {
+        emptiedArray(editOther);
+        if(lihatAbsen){
+            lihatAbsen = false;
+            return;
+        }
+        if(edit){
+            edit = false;
+            return;
+        }
+        if(menuClick) {
+            menuClick = undefined;
+            return;
+        }
+        newMsgBox.push({
+            Title: "Keluar",
+            Message: "Apakah yakin ingin keluar?",
+            NotificationType: 'warning',
+            ButtonType: 'yesno',
+            Action: async (result: any) => {
+                if(result){
+                    if(result === 'yes' && !loading){
+                        loading = true;
+                        try{
+                            await fetch('/logout', {
+                                method: 'GET'
+                            });
+                            loading = false;
                             deleteArray(newMsgBox, "Keluar");
-                        }
+                            goto('/');
+                        }catch (error) {console.log(error);}
+                    }else if(result === 'no' && !loading){
+                        deleteArray(newMsgBox, "Keluar");
                     }
                 }
-            })
-        }} />
-    </div>
+            }
+        })
+    }} />
 
 {#if !menuClick}
     <div class="h-fit w-fit flex flex-col justify-center items-center gap-4">
@@ -250,51 +268,240 @@
 
     }}>
     {#if edit}
-        <form action="?/costumer" method="post" class="flex flex-col w-full h-fit gap-2">
-            <label for="name">Nama Customer: </label>
-            <input type="text" name="name" id="name" required>
-            <label for="duration">Lama: </label>
-            <select name="duration" id="duration" bind:this={bindThisSelect} required>
-                <option value="3">3 Jam</option>
-                <option value="6">6 Jam</option>
-                <option value="9">9 Jam</option>
-                <option value="12">12 Jam</option>
-                <option value="24">24 Jam</option>
-                <option value="custom">Custom</option>
-            </select>
-            <div class="flex justify-between items-center h-fit w-full">
-                <div class="flex flex-col h-fit w-fit">
-                    <label for="enter">Jam Masuk: </label>
-                    <input type="time" name="enter" id="" bind:this={bindThisInput} required>
-                </div>
+        <div class="flex w-full h-fit justify-center gap-2 bg-blue-950 rounded-2xl p-2">
+            <h1 class=" text-2xl font-bold">{editName}</h1>
+        </div>
+        {#if editOther[0] === "Ready"}
+            <form onsubmit={() => {
+                submiting=true;
+                newMsgBox.push({
+                    Title: "Loading",
+                    Message: "Harap Tunggu",
+                    NotificationType: "info",
+                    Action: () => {}
+                })
                 
-                <div class="flex flex-col h-fit w-fit">
-                    <label for="enter">Jam Keluar: </label>
-                    <input type="time" name="enter" id="" disabled={(bindThisSelect?.value !== "custom")} value={() => {
-                        if(bindThisSelect?.value === "custom"){
-                            return "";
-                        }else{
-                            const udin = parseTimeStringToHoursMinutes(bindThisInput?.value ?? "", parseInt(bindThisSelect?.value ?? "0", 10));
-                            if(udin){
-                                return udin.hours + ":" + udin?.minutes;
+            }} action="?/costumer" method="post" class="flex flex-col w-full h-fit gap-2" enctype="multipart/form-data" use:enhance={async () => {
+                return async ({update}) => {
+                    submiting = false;
+                    deleteArray(newMsgBox, "Loading");
+                    await update();
+                    edit = false;
+                    await invalidateAll();
+                    if(form?.success){
+                        newMsgBox.push({
+                            Title: "Berhasil",
+                            Message: "Berhasil menambahkan customer",
+                            NotificationType: 'info',
+                            ButtonType: 'ok',
+                            Action: () => {
+                                emptiedArray(editOther);
+                                refreshData()
+                                deleteArray(newMsgBox, "Berhasil");
                             }
-                        }
-                    }} required>
+                        });
+                    }else error = true;
+                }
+            }}>
+                <label for="name">Nama Customer: </label>
+                <input type="text" name="name" id="name" required>
+                <label for="duration">Lama: </label>
+                <select name="duration" id="duration" bind:this={bindThisSelect} onchange={() => {
+                    updateWaktu = updateDataToTime();
+                    JamorHari = bindThisSelect?.options[bindThisSelect.selectedIndex].text ?? '';
+                }} required>
+                    <option value="3">3 Jam</option>
+                    <option value="6">6 Jam</option>
+                    <option value="9">9 Jam</option>
+                    <option value="12">12 Jam</option>
+                    <option value="24">24 Jam</option>
+                    <option value="0">Kostum Jam</option>
+                    <option value="9999">Kostum Hari</option>
+                </select>
+                {#if JamorHari !== "Kostum Hari"}
+                    <div class="flex justify-between items-center h-fit w-full">
+                        <div class="flex flex-col h-fit w-fit">
+                            <label for="enter">Jam Masuk: </label>
+                            <input type="time" name="enter" id="" bind:this={bindThisInput} onchange={() => updateWaktu = updateDataToTime()} required>
+                        </div>
+                        
+                        <div class="flex flex-col h-fit w-fit">
+                            <label for="out">Jam Keluar: </label>
+                            <input type="time" name="out" id="" readonly={bindThisSelect?.options[bindThisSelect?.selectedIndex].text !== "Kostum Jam"} value={updateWaktu} required>
+                        </div>
+                    </div>
+                {:else}
+                    <div class="flex flex-col justify-between items-center h-fit w-full">
+                        <div class="flex flex-col h-fit w-fit">
+                            <label for="enter">Hari Masuk: </label>
+                            <input type="date" name="enter" id="" required>
+                        </div>
+                        
+                        <div class="flex flex-col h-fit w-fit">
+                            <label for="out">Hari Keluar: </label>
+                            <input type="date" name="out" id="" required>
+                        </div>
+                    </div>
+                {/if}
+                <label for="agent">Pilih Agent: </label>
+                <select name="agent" id="" required>
+                    {#each data?.dataAgents as agent}
+                        <option value={agent.id + "|" + agent.createdByWho}>{agent.nameAgent} (Host: {agent.createdByWho})</option>
+                    {/each}
+                </select>
+                <label for="price">Input Harga: </label>
+                <input type="number" name="price" pattern="[0-9]*" id="" required>
+                <label for="ktp">Foto KTP:</label>
+                <input type="file" id="ktp" name="ktp" accept="image/*" capture="environment" required />           
+                <input type="hidden" name="unit_id" value={editId}>
+                <button disabled={submiting} type="submit" class="flex w-full h-fit bg-gradient-to-b from-green-500 via-green-600 to-green-700 justify-center items-center text-center text-2xl rounded-2xl font-sans"> SUBMIT </button>
+            </form>
+        {:else if editOther[0] === "Working"}
+            <form onsubmit={() => {
+                submiting=true;
+                newMsgBox.push({
+                    Title: "Loading",
+                    Message: "Harap Tunggu",
+                    NotificationType: "info",
+                    Action: () => {}
+                })
+                
+            }} action="?/editcostumer" method="post" class="flex flex-col w-full h-fit gap-2" enctype="multipart/form-data" use:enhance={async () => {
+                return async ({update}) => {
+                    submiting = false;
+                    deleteArray(newMsgBox, "Loading");
+                    await update();
+                    edit = false;
+                    invalidateAll();
+                    refreshData();
+                    if(form?.success){
+                        newMsgBox.push({
+                            Title: "Berhasil",
+                            Message: "Berhasil mengubah customer",
+                            NotificationType: 'info',
+                            ButtonType: 'ok',
+                            Action: () => {
+                                emptiedArray(editOther);
+                                deleteArray(newMsgBox, "Berhasil");
+                            }
+                        });
+                    }else error = true;
+                }
+            }}>
+                <p>Nama Customer: {editOther[1]}</p>
+                <input type="hidden" name="unit_id" value={editId}>
+                <label for="duration">Lama: </label>
+                <select name="duration" id="duration" bind:this={bindThisSelect} onchange={() => {
+                    updateWaktu = updateDataToTime();
+                    JamorHari = bindThisSelect?.options[bindThisSelect.selectedIndex].text ?? '';
+                }}>
+                    {JamorHari = bindThisSelect?.options[bindThisSelect.selectedIndex].text ?? ''}
+                    <option value="">Ubah Status Room</option>
+                    <option value="3">3 Jam</option>
+                    <option value="6">6 Jam</option>
+                    <option value="9">9 Jam</option>
+                    <option value="12">12 Jam</option>
+                    <option value="24">24 Jam</option>
+                    <option value="0">Kostum Jam</option>
+                    <option value="9999">Kostum Hari</option>
+                </select>
+                {#if JamorHari === "Ubah Status Room"}
+                    <div class="flex gap-3 w-fit h-fit">
+                        <label for="readyState">Kembali ke ready? </label>
+                        <input type="checkbox" name="readyState" id="" required>
+                    </div>
+                {:else}
+                    {#if JamorHari !== "Kostum Hari"}
+                        <div class="flex justify-between items-center h-fit w-full">
+                            <div class="flex flex-col h-fit w-fit">
+                                <label for="enter">Jam Masuk: </label>
+                                <input type="time" name="enter" id="" bind:this={bindThisInput} onchange={() => updateWaktu = updateDataToTime()} required>
+                            </div>
+                            
+                            <div class="flex flex-col h-fit w-fit">
+                                <label for="out">Jam Keluar: </label>
+                                <input type="time" name="out" id="" readonly={bindThisSelect?.options[bindThisSelect?.selectedIndex].text !== "Kostum Jam"} value={updateWaktu} required>
+                            </div>
+                        </div>
+                    {:else}
+                        <div class="flex flex-col justify-between items-center h-fit w-full">
+                            <div class="flex flex-col h-fit w-fit">
+                                <label for="enter">Hari Masuk: </label>
+                                <input type="date" name="enter" id="" >
+                            </div>
+                            
+                            <div class="flex flex-col h-fit w-fit">
+                                <label for="out">Hari Keluar: </label>
+                                <input type="date" name="out" id="" >
+                            </div>
+                        </div>
+                    {/if}
+                {/if}
+                <button disabled={submiting} type="submit" class="flex w-full h-fit bg-gradient-to-b from-green-500 via-green-600 to-green-700 justify-center items-center text-center text-2xl rounded-2xl font-sans"> SUBMIT </button>
+            </form>
+        {:else if editOther[0] === "StandBy"}
+            <form onsubmit={() => {
+                submiting=true;
+                newMsgBox.push({
+                    Title: "Loading",
+                    Message: "Harap Tunggu",
+                    NotificationType: "info",
+                    Action: () => {}
+                })
+                
+            }} action="?/approve" method="post" use:enhance={async () => {
+                return async ({update}) => {
+                    submiting = false;
+                    deleteArray(newMsgBox, "Loading");
+                    await update();
+                    edit = false;
+                    editId = "";
+                    editName = "";
+                    emptiedArray(editOther);
+                    invalidateAll();
+                    refreshData();
+                    if(form?.success){
+                        newMsgBox.push({
+                            Title: "Berhasil",
+                            Message: "Approve Berhasil Dilakukan",
+                            NotificationType: 'info',
+                            ButtonType: 'ok',
+                            Action: () => {
+                                emptiedArray(editOther);
+                                deleteArray(newMsgBox, "Berhasil");
+                            }
+                        });
+                    }else error = true;
+                }
+            }}>
+                <input type="hidden" name="unitId" value={editId}>
+                <input type="hidden" name="kebersihanId" value={editName}>
+                <input type="hidden" name="approve" value={editOther[4]}>
+                <div class="w-full h-fit flex flex-col justify-center justify-items-center items-center text-center gap-1">
+                    <div class="w-full h-fit flex justify-center justify-items-center items-center text-center gap-0.5">
+                        <div class="w-full h-fit flex flex-col justify-center justify-items-center items-center text-center">
+                            <p class="text-[1rem] font-bold">Ruangan</p>
+                            <img src={`https://res.cloudinary.com/du0gb4nqq/image/upload/v1762169111/${editOther[2]}.jpg`} alt="">
+                        </div>
+                        <div class="w-full h-fit flex flex-col justify-center justify-items-center items-center text-center">
+                            <p class="text-[1rem] font-bold">Kamar Mandi</p>
+                            <img src={`https://res.cloudinary.com/du0gb4nqq/image/upload/v1762169111/${editOther[3]}.jpg`} alt="">
+                        </div>
+                    </div>
+                    <p class="font-bold text-[1rem] text-center">{editOther[1]}</p>
+                    <p class="font-bold text-2xl text-center">Apakah semuanya aman?</p>
+                    <div class="w-full h-full flex justify-center justify-items-center items-center text-center">
+                        <button class="flex w-full h-fit bg-gradient-to-b from-green-500 via-green-600 to-green-700 justify-center items-center text-center text-2xl rounded-2xl font-sans" onclick={() => {
+                            editOther.push("Terima");
+                        }}> Ya </button>
+                        <button class="flex w-full h-fit bg-gradient-to-b from-red-500 via-red-600 to-red-700 justify-center items-center text-center text-2xl rounded-2xl font-sans" onclick={() => {
+                            editOther.push("Tolak");
+                        }}> Tidak </button>
+                    </div>
                 </div>
-            </div>
-            <label for="agent">Pilih Agent: </label>
-            <select name="agent" id="" required>
-                {#each data?.dataAgents as agent}
-                    <option value={agent.id}>{agent.nameAgent} Host: {agent.createdByWho}</option>
-                {/each}
-            </select>
-            <label for="price">Input Harga: </label>
-            <input type="text" name="price" id="" required>
-            <label for="ktp">Foto KTP:</label>
-            <input type="file" id="ktp" name="ktp" accept="image/png, image/jpeg, .pdf" required />           
-        
-            <input type="hidden" name="unit_id" value={editId}>
-        </form>
+                <button disabled={submiting} type="submit" class="hidden" aria-label="i" bind:this={bindThisButton}></button>
+            </form>
+        {/if}
     {:else}
         <div class="flex w-full h-fit justify-between gap-2 bg-blue-950 rounded-2xl p-2">
             <div class="flex flex-col w-full h-fit justify-between">
@@ -321,21 +528,75 @@
         {#each rooms as unit (unit.id)}
         <!-- DO SOMETHING WHEN CLICK OR NOT AND CHANGE COLOR BASED ON UNIT STATE -->
             <button class="
-                w-full text-white flex-col text-3xl font-bold p-5 rounded-2xl
-                bg-gradient-to-b {(unit.state == 'Ready') ? "from-green-500 to-green-700" : (unit.state == 'StandBy') ? "from-yellow-500 to-yellow-700" : (unit.state == 'Working') ? "from-red-500 to-red-700" : "from-gray-500 to-gray-700"}
-                shadow-md hover:shadow-lg
-                active:translate-y-0.5
-                transition-all duration-200 ease-in-out
-                focus:outline-none focus:ring-4 focus:ring-blue-400
-                "
+                  w-full text-white flex-col text-3xl font-bold p-5 rounded-2xl
+                    bg-gradient-to-b {(unit.state == 'Ready') ? "from-green-500 to-green-700" : (unit.state == 'StandBy') ? "from-yellow-500 to-yellow-700" : (unit.state == 'Working') ? "from-red-500 to-red-700" : "from-gray-500 to-gray-700"}
+                    shadow-md hover:shadow-lg {(unit.state == "StandBy" && unit.pending) ? "animate-pulse" : ""}
+                    active:translate-y-0.5
+                    transition-all duration-200 ease-in-out
+                    focus:outline-none focus:ring-4 focus:ring-blue-400
+                  "
                 onclick={() => {
                     if(unit.state === "Ready"){
                         edit = true;
                         editId = unit.id;
+                        editName = unit.name;
+                        editOther.push(unit.state);
+                    }else if(unit.state === "Working"){
+                        const costumerBersangkutan = data?.dataCustomers?.find(x => x.unitId === unit.id)?.name ?? undefined;
+                        if(!costumerBersangkutan){
+                            newMsgBox.push({
+                                Title: "Status Room",
+                                Message: "Kostumer tidak ditemukan, terjadi kesalahan, harap panggil developernya",
+                                NotificationType: 'warning',
+                                ButtonType: 'ok',
+                                Action: async (result: any) => {
+                                    deleteArray(newMsgBox, "Status Room");
+                                }
+                            })
+                            return;
+                        }
+                        edit = true;
+                        editId = unit.id;
+                        editName = unit.name;
+                        editOther.push(unit.state);
+                        editOther.push(costumerBersangkutan);
+                    }else if (unit.state === "StandBy"){
+                        if(!unit.pending){
+                            newMsgBox.push({
+                                Title: "Status Room",
+                                Message: "Ruangan sedang dibersihkan",
+                                NotificationType: 'info',
+                                ButtonType: 'ok',
+                                Action: async (result: any) => {
+                                    deleteArray(newMsgBox, "Status Room");
+                                }
+                            })
+                            return;
+                        }
+                        const dataKebersihanTerkini = data?.dataKebersihan?.find(x => x.id === unit.kebersihan);
+                        if(!dataKebersihanTerkini){
+                            newMsgBox.push({
+                                Title: "Status Room",
+                                Message: "Ruangan tidak ditemukan",
+                                NotificationType: 'info',
+                                ButtonType: 'ok',
+                                Action: async (result: any) => {
+                                    deleteArray(newMsgBox, "Status Room");
+                                }
+                            })
+                            return;
+                        }
+                        edit = true;
+                        editId = unit.id;
+                        editName = dataKebersihanTerkini.id;
+                        editOther.push(unit.state);
+                        editOther.push(dataKebersihanTerkini.when.toString());
+                        editOther.push(dataKebersihanTerkini.imgRuang);
+                        editOther.push(dataKebersihanTerkini.imgMandi);
                     }else{
                         newMsgBox.push({
                             Title: "Status Room",
-                            Message: ((unit.state === "StandBy") ? "Ruangan sedang dalam kondisi belum siap" : ((unit.state === "Working") ? "Ruangan sedang digunakan" : "Ruangan Bermasalah")),
+                            Message: "Ruangan Bermasalah",
                             NotificationType: 'warning',
                             ButtonType: 'ok',
                             Action: async (result: any) => {
@@ -354,27 +615,83 @@
     {/if}
     </ListingComp> 
 {:else if menuClick === "Input Masalah"}
-    <ListingComp disableAddButton={true} editable={false} items={[]} ifItems={false} ifOther={false} itemEdit={true} selectedItemsID={0} onclick={() => {
+    <ListingComp disableAddButton={true} title="Masalah" editable={false} items={[]} ifItems={false} ifOther={false} itemEdit={true} selectedItemsID={0} onclick={() => {
 
     }}>
         {#if edit}
             <div class="flex w-full h-fit justify-center gap-2 bg-blue-950 rounded-2xl p-2">
                 <h1 class=" text-2xl font-bold">{editName}</h1>
             </div>
-            <form action="?/masalah" method="post" class="flex flex-col w-full h-fit gap-2">
+            <form onsubmit={async () => {
+                submiting=true;
+                newMsgBox.push({
+                    Title: "Loading",
+                    Message: "Harap Tunggu",
+                    NotificationType: "info",
+                    Action: () => {}
+                });
+            }} action="?/masalah" method="post" class="flex flex-col w-full h-fit gap-2" enctype="multipart/form-data" use:enhance={() => {
+                return async ({update}) => {
+                    submiting = false;
+                    deleteArray(newMsgBox, "Loading");
+                    deleteArray(newMsgBox, "Perhatian");
+                    await update();
+                    edit = false;
+                    invalidateAll();
+                    refreshData();
+                    if(form?.success){
+                        newMsgBox.push({
+                            Title: "Berhasil",
+                            Message: "Berhasil mengubah customer",
+                            NotificationType: 'info',
+                            ButtonType: 'ok',
+                            Action: () => {
+                                emptiedArray(editOther);
+                                deleteArray(newMsgBox, "Berhasil");
+                            }
+                        });
+                    }else error = true;
+                }
+            }}>
                 <label for="name">Nama Staff: </label>
                 <input type="text" name="name" id="name" value={data?.userNow.username} required readonly>
                 <label for="jabatan">Jabatan: </label>
                 <input type="text" name="jabatan" value={accountTypeMap[data?.userNow.accountType] || 'Tidak Dikenali'} id="" required readonly>
                 <label for="jam">Jam: </label>
                 <input type="text" name="jam" id="" value={(formatTime(hours)+":"+formatTime(minutes))} required readonly>
+                {#if editOther[0] === 'Working'}
+                    <label for="berat">Apakah masalahnya berat? Jika berat akan kami tutup unitnya: </label>
+                    <input type="checkbox" name="berat" id="" bind:this={bindThisInput}>
+                {/if}
                 <label for="masalah">Masalah: </label>
-                <textarea name="masalah" id="" rows="4" cols="50" required ></textarea> 
+                <textarea name="masalah" id="" rows="4" cols="50" required ></textarea>
                 <label for="foto">Foto Masalah:</label>
-                <input type="file" id="foto" name="foto" accept="image/png, image/jpeg, .pdf" required />           
+                <input type="file" id="foto" name="foto" accept="image/*" capture="environment"  required />           
             
                 <input type="hidden" name="unit_id" value={editId}>
                 <input type="hidden" name="accountType" value={data?.userNow.accountType}>
+                <button disabled={submiting} type="button" class="flex w-full h-fit bg-gradient-to-b from-green-500 via-green-600 to-green-700 justify-center items-center text-center text-2xl rounded-2xl font-sans"
+                onclick={() => {
+                    if(bindThisInput?.checked){
+                        newMsgBox.push({
+                            Title: "Perhatian",
+                            Message: `Akan kami tutup unit ${editName} ini! Jika didalamnya ada kustomer maka akan kami usir paksa kostumernya dari unit tersebut!, Apakah anda ingin melanjutkan?.`,
+                            NotificationType: "warning",
+                            ButtonType: 'yesno',
+                            Action: (result: any) => {
+                                if(result === "yes"){
+                                    bindThisSubmit?.click();
+                                    return;
+                                }else if(result === "no"){
+                                    deleteArray(newMsgBox, "Perhatian");
+                                    return;
+                                }
+                            }
+                        })
+                    }
+                    bindThisSubmit?.click();
+                }}> SUBMIT </button>
+                <button type="submit" class="hidden" bind:this={bindThisSubmit}>submit</button>
             </form>
         {:else}
             <div class="flex w-full h-fit justify-between gap-2 bg-blue-950 rounded-2xl p-2">
@@ -410,14 +727,15 @@
                     focus:outline-none focus:ring-4 focus:ring-blue-400
                     "
                     onclick={() => {
-                        if(unit.state === "Ready"){
+                        if(unit.state === "Ready" || unit.state === "Working"){
                             edit = true;
                             editId = unit.id;
                             editName = unit.name;
+                            editOther.push(unit.state);
                         }else{
                             newMsgBox.push({
                                 Title: "Status Room",
-                                Message: ((unit.state === "StandBy") ? "Ruangan sedang dalam kondisi belum siap" : ((unit.state === "Working") ? "Ruangan sedang digunakan" : "Ruangan Bermasalah")),
+                                Message: ((unit.state === "StandBy") ? "Ruangan sedang dalam kondisi belum siap" : ((unit.state === "Closed") ? "Ruangan Belum diperbaiki" : "Ruangan status tidak diketahui")),
                                 NotificationType: 'warning',
                                 ButtonType: 'ok',
                                 Action: async (result: any) => {
@@ -436,14 +754,15 @@
         {/if}
     </ListingComp>
 {:else if menuClick === "Absensi"}
-    <ListingComp disableAddButton={true} editable={false} items={[]} ifItems={false} ifOther={false} itemEdit={true} selectedItemsID={0} onclick={() => {
+    <ListingComp title="Absensi" disableAddButton={true} editable={false} items={[]} ifItems={false} ifOther={false} itemEdit={true} selectedItemsID={0} onclick={() => {
 
     }}>
-    {#if !edit}
-        <div class=" flex-grow bg-slate-900 rounded-2xl p-3 space-y-3 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-900">
-            {#each (new Array<any>) as udin}
+    {#if !edit && !lihatAbsen}
+        <div class=" flex flex-col justify-center items-center text-center flex-grow w-full h-fit bg-slate-900 rounded-2xl p-3 space-y-3 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-900">
+            {#each data?.dataAbsensi as absen}
                 <button class="
-                    flex w-full h-fit text-white flex-col text-3xl font-bold p-5 rounded-2xl
+                    justify-center items-center text-center
+                    flex w-fit h-fit text-white flex-col text-3xl font-bold p-5 rounded-2xl
                     bg-gradient-to-b from-green-500 via-green-600 to-green-700 
                     shadow-md hover:shadow-lg
                     active:translate-y-0.5
@@ -451,38 +770,75 @@
                     focus:outline-none focus:ring-4 focus:ring-blue-400
                     "
                     onclick={() => {
-                        
+                        editId = absen.id;
+                        editName = absen.name;
+                        editOther.push(absen.fotoUrl);
+                        editOther.push(absen.whenEntry.toString());
+                        editOther.push(accountTypeMap[absen.accountType] || 'Tidak Dikenali');
+                        lihatAbsen = true;
                     }}
                     aria-label="i"
                 >
-                    <!-- TODO: Add Absensi -->
-                    <img src="" alt="">
-                    <div class="flex flex-col w-fit h-fit justify-center gap-2 ">
-                        <p></p>
-                        <p></p>
-                        <p></p>
-                        <p></p>
-                    </div>
+                    <p class="text-center font-bold text-[1rem] text-white">{absen.name.toUpperCase()}</p>
+                    <p class="text-center text-[15px] text-white">{accountTypeMap[absen.accountType] || 'Tidak Dikenali'}</p>
+                    <p class="text-center text-[15px] text-white">{absen.whenEntry.toLocaleDateString()} {absen.whenEntry.toLocaleTimeString()}</p>
                 </button>
             {/each}
         </div>
-        <button
-            class="
-            w-full text-white text-3xl font-bold p-5 rounded-2xl
-            bg-gradient-to-b from-blue-500 to-blue-700
-            shadow-md hover:shadow-lg
-            active:translate-y-0.5
-            transition-all duration-200 ease-in-out
-            focus:outline-none focus:ring-4 focus:ring-blue-400
-            "
-            onclick={() => {
-                edit = true;
+        {#if !(data?.dataAbsensi?.some(data => data.whenEntry.toDateString() === (new Date()).toDateString())) || (data?.dataAbsensi.length == 0)}
+            <button
+                class="
+                w-full text-white text-3xl font-bold p-5 rounded-2xl
+                bg-gradient-to-b from-blue-500 to-blue-700
+                shadow-md hover:shadow-lg
+                active:translate-y-0.5
+                transition-all duration-200 ease-in-out
+                focus:outline-none focus:ring-4 focus:ring-blue-400
+                "
+                onclick={() => {
+                    edit = true;
+                }}
+            >
+                Input Absensi
+            </button>
+        {/if}
+    {:else if edit}
+        <form 
+            onsubmit={async () => {
+                //submiting=true;
+                newMsgBox.push({
+                    Title: "Loading",
+                    Message: "Harap Tunggu",
+                    NotificationType: "info",
+                    Action: () => {}
+                });
             }}
+            
+        action="?/absen" method="post" class="flex flex-col w-full h-fit gap-2" enctype="multipart/form-data"
+            use:enhance={() => {
+                    return async ({update}) => {
+                        submiting = false;
+                        deleteArray(newMsgBox, "Loading");
+                        await update();
+                        edit = false;
+                        invalidateAll();
+                        refreshData();
+                        if(form?.success){
+                            newMsgBox.push({
+                                Title: "Berhasil",
+                                Message: "Berhasil mengubah customer",
+                                NotificationType: 'info',
+                                ButtonType: 'ok',
+                                Action: () => {
+                                    emptiedArray(editOther);
+                                    deleteArray(newMsgBox, "Berhasil");
+                                }
+                            });
+                        }else error = true;
+                    }
+                }
+            }
         >
-            Input Absensi
-        </button>
-    {:else}
-        <form action="?/absen" method="post" class="flex flex-col w-full h-fit gap-2">
             <label for="name">Nama Staff: </label>
             <input type="text" name="name" id="name" value={data?.userNow.username} required readonly>
             <label for="jabatan">Jabatan: </label>
@@ -490,12 +846,27 @@
             <label for="jam">Jam: </label>
             <input type="text" name="jam" id="" value={(formatTime(hours)+":"+formatTime(minutes))} required readonly>
             <label for="foto">Foto Absensi:</label>
-            <input type="file" id="foto" name="foto" accept="image/png, image/jpeg, .pdf" required />           
+            <input type="file" id="foto" name="foto" accept="image/*" capture="user"  required />           
         
             <input type="hidden" name="unit_id" value={editId}>
             <input type="hidden" name="accountType" value={data?.userNow.accountType}>
+            <button disabled={submiting} type="submit" class="flex w-full h-fit bg-gradient-to-b from-green-500 via-green-600 to-green-700 justify-center items-center text-center text-2xl rounded-2xl font-sans"> SUBMIT </button>
         </form>
+    {:else if lihatAbsen}
+        <div class=" flex-grow bg-slate-900 rounded-2xl p-3 space-y-3 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-900">
+            <div class="flex flex-col bg-transparent h-fit w-full justify-items-center justify-center items-center text-center">
+                <img src={`https://res.cloudinary.com/du0gb4nqq/image/upload/v1762169111/${editOther[0]}.jpg`} alt={`Foto Absen ${editName}`} class=" rounded-2xl">
+                <p class="text-center font-bold text-[1rem] text-white">Nama: {editName}</p>
+                <p class="text-center text-[15px] text-white">Jabatan: {editOther[2]}</p>
+                <p class="text-center text-[15px] text-white">Waktu: {editOther[1]}</p>
+            </div>
+        </div>
     {/if}
     </ListingComp>
 {/if}
 </div>
+
+<svelte:window on:focus={() => {
+    invalidateAll();
+    refreshData();
+}} />

@@ -1,53 +1,373 @@
-import { redirect, type Actions } from "@sveltejs/kit";
+import { fail, redirect, type Actions } from "@sveltejs/kit";
 import type { PageServerLoad } from "./$types";
 import { db } from "$lib/server/db";
-import { agents, masalah, units } from "$lib/server/db/schema";
-import { asc } from "drizzle-orm";
+import { absensi, accounts, agents, customers, kebersihan, masalah, units } from "$lib/server/db/schema";
+import { asc, eq } from "drizzle-orm";
+import { CREATE, DELETE } from "$lib/server/upload_cloudinary";
+import { and } from "drizzle-orm";
+import { desc } from "drizzle-orm";
 
-
+const accountTypes = ["FO", "HK", "T", "H"] as const;
+type AccountType = typeof accountTypes[number];
+function toAccountType(value: string): AccountType | undefined {
+  return accountTypes.find(c => c === value);
+}
 
 export const load: PageServerLoad = async ({ locals }) => {
     if (!locals.user || locals.user.accountType !== 'FO') {
 		throw redirect(302, '/');
 	}
-
+    
     try{
-        const dataUnits = await db.select().from(units).orderBy(asc(units.unitState));
-        const dataAgents = await db.select().from(agents);
+        const dataUnits = await db.select().from(units).where(eq(units.createdByWho, locals.user.createdByWho)).orderBy(asc(units.unitState));
+        const dataAgents = await db.select().from(agents).where(eq(agents.createdByWho, locals.user.createdByWho));
+        const dataCustomers = await db
+        .select({
+            id: customers.idCostumers,
+            name: customers.customersName,
+            hostName: customers.hostName,
+            unitId: customers.unitId,
+            price: customers.price,
+            duration: customers.duration,
+        })
+        .from(customers)
+        .innerJoin(accounts, eq(customers.hostName, accounts.username))
+        .where(eq(accounts.createdByWho, locals.user.createdByWho));
+        const dataAbsensi = await db.select().from(absensi).where(eq(absensi.name, locals.user.username));
+        const dataKebersihan = await db
+        .select({
+            id: kebersihan.id,
+            when: kebersihan.when,
+            imgRuang: kebersihan.gambarRuangan,
+            imgMandi: kebersihan.gambarKamarMandi,
+            approve: kebersihan.approve
+        })
+        .from(units)
+        .innerJoin(kebersihan, eq(units.kebersihan, kebersihan.id))
+        .innerJoin(accounts, eq(kebersihan.name, accounts.username))
+        .where(and(eq(accounts.createdByWho, units.createdByWho)));
+        
         return {
             dataUnits,
             dataAgents,
+            dataCustomers,
+            dataAbsensi,
+            dataKebersihan,
             userNow: locals.user
         }
     }catch(error){
-        error = (error as Error);
         return { 
-            error: error,
+            error: ((error as Error).cause as string) ?? '',
             description: "Terjadi kesalahan saat mengambil data",
             userNow: locals.user
-        }
+        };
     }
 }
 
 export const actions: Actions = {
-    default: async (event) => {
-        try {
-            
-        } catch (error) {
-            error = (error as Error);
-            return{
-                error,
-                description: "Terjadi kesalahan",
+    approve: async (event) => {
+            const fromData: FormData = await event.request.formData();
+            const unitId: string = fromData.get('unitId')?.toString() ?? '';
+            const kebersihanId: string = fromData.get('kebersihanId')?.toString() ?? '';
+            const approve: boolean = ((fromData.get('approve')?.toString() ?? '') == "Terima") ? true : false;
+            try {
+                if(approve){
+                    const customers_get = await db
+                    .select()
+                    .from(customers)
+                    .where(eq(customers.unitId, unitId))
+                    .orderBy(desc(customers.fromTime))
+                    .limit(1);
+                    await db.update(units).set({
+                        kebersihan: null,
+                        pending: false,
+                        unitState: 'Working',
+                        fromTime: customers_get[0].fromTime,
+                        toTime: customers_get[0].toTime,
+                    }).where(eq(units.id, unitId));
+                    await db.delete(kebersihan).where(eq(kebersihan.id, kebersihanId));
+                }else{
+                    await db.update(kebersihan).set({
+                        approve: false,
+                        gambarRuangan: "",
+                        gambarKamarMandi: "",
+                    }).where(eq(kebersihan.id, kebersihanId));
+                    await db.update(units).set({
+                        pending: false
+                    }).where(eq(units.kebersihan, kebersihanId));
+                }
+                await db.update(units)
+            } catch (error) {
+                console.error(error);
+                return fail(422, {
+                    success: false,
+                    message: "Terjadi kegagalan",
+                    error: "Terjadi Kegagalan, harap hubungi developernya",
+                })
             }
+            return {
+			success: true,
+			message: "Kebersihan berhasil disetujui",
+			error: null
+		}
+        },
+    costumer: async (event) => {
+        const formData: FormData = await event.request.formData();
+        const customerName: string = (formData.get("name")?.toString() ?? '');
+        let duration: number = +(formData.get("duration")?.toString() ?? '0');
+        let durationDays: boolean = false;
+        const formTime: string = (formData.get("enter")?.toString() ?? '');
+        const toTime: string = (formData.get("out")?.toString() ?? '');
+        const [agent_id, agent_host]: string[] = (formData.get("agent")?.toString() ?? '|').split("|");
+        const price: number = +(formData.get("price")?.toString() ?? '0');
+        const fotoKtp: File = (formData.get("ktp") as File);
+        const unit_id: string = (formData.get("unit_id")?.toString() ?? '');
+        
+        try {
+            const result_upload = await CREATE(fotoKtp);
+            //CHECK IF RESULT UPLOAD IS THERE
+            if(!result_upload){
+                return fail(422, {
+                    success: false,
+                    message: "Upload KTP gagal",
+                    error: "Upload KTP Gagal dilakukan (entah kenapa)",
+                })
+            }
+            //CHECK IF UPLOAD IS DONE OR ERROR
+            else{
+                await db.update(units).set({
+                    unitState: 'StandBy',
+                    pending: null
+                }).where(eq(units.id, unit_id))
+                //Check if custom duration
+                let fromDate: Date = new Date();
+                let toDate: Date = new Date();
+                const [fromHour, fromMin] = formTime.split(":").map(Number);
+                const [toHour, toMin] = toTime.split(":").map(Number);
+                const today = new Date();
+                fromDate = new Date(today);
+                fromDate.setHours(fromHour, fromMin, 0, 0);
+                toDate = new Date(today);
+                toDate.setHours(toHour, toMin, 0, 0);
+                if (toDate < fromDate) toDate.setDate(toDate.getDate() + 1);
+                if(duration == 0) {
+                    const diffMs = toDate.getTime() - fromDate.getTime();
+                    duration = diffMs / (1000 * 60 * 60);
+                }else if(duration == 9999){
+                    fromDate = new Date(formTime);
+                    toDate = new Date(toTime);
+                    const diffMs = toDate.getTime() - fromDate.getTime();
+                    duration = diffMs / (1000 * 60 * 60 * 24);
+                    durationDays = true;
+                }
+                await db.insert(customers).values({
+                    hostName: agent_host,
+                    agent: agent_id,
+                    unitId: unit_id,
+                    customersName: customerName,
+                    duration: duration,
+                    fromTime: `${fromDate.getFullYear()}-${fromDate.getMonth()}-${(fromDate.getDate()< 10) ? '0' + fromDate.getDate() : fromDate.getDate()} ${fromDate.getHours()}:${fromDate.getMinutes()}:00`,
+                    toTime: `${toDate.getFullYear()}-${toDate.getMonth()}-${(toDate.getDate() < 10) ? '0' + toDate.getDate() : toDate.getDate()} ${toDate.getHours()}:${toDate.getMinutes()}:00`,
+                    price: price,
+                    fotoKTP: result_upload.public_id,
+                    durationDays: durationDays
+                });
+            }
+        } catch (error) {
+            console.log(error);
+            await db.update(units).set({
+                unitState: 'Ready'
+            }).where(eq(units.id, unit_id))
+            return fail(422, {
+                success: false,
+                message: "Data gagal ditambahkan",
+                error: "Terjadi kesalahan saat data ditambahkan terjadi, harap hubungi developer",
+            })
         }
+        return {
+			success: true,
+			message: "Data berhasil ditambahkan",
+			error: null
+		}
     },
-    customer: async (event) => {
+    editcostumer: async (event) => {
+        const formData: FormData = await event.request.formData();
+        const unit_id: string = (formData.get("unit_id")?.toString() ?? '');
+        const changeStateToReady: boolean = (formData.get('readyState') as unknown as boolean ?? false)
+        let duration: number | undefined = +(formData.get("duration")?.toString() ?? '-1');
+        try {
+            if(!changeStateToReady){
+                const fromTime: string = (formData.get("enter")?.toString() ?? '');
+                const toTime: string = (formData.get("out")?.toString() ?? '');
+                let durationDays = false;
+                let fromDate: Date = new Date();
+                let toDate: Date = new Date();
+                if(duration == 0) {
+                    const [fromHour, fromMin] = fromTime.split(":").map(Number);
+                    const [toHour, toMin] = toTime.split(":").map(Number);
+                    const today = new Date();
+                    fromDate = new Date(today);
+                    fromDate.setHours(fromHour, fromMin, 0, 0);
+                    toDate = new Date(today);
+                    toDate.setHours(toHour, toMin, 0, 0);
+                    if (toDate < fromDate) {
+                        toDate.setDate(toDate.getDate() + 1);
+                    }
+                    const diffMs = toDate.getTime() - fromDate.getTime();
+                    duration = diffMs / (1000 * 60 * 60);
+                }else if(duration == 9999){
+                    fromDate = new Date(fromTime);
+                    toDate = new Date(toTime);
+                    const diffMs = toDate.getTime() - fromDate.getTime();
+                    duration = diffMs / (1000 * 60 * 60 * 24);
+                    durationDays = true;
+                }
 
+                await db.update(customers).set({
+                    fromTime: `${fromDate.getFullYear()}-${fromDate.getMonth()}-${(fromDate.getDate()< 10) ? '0' + fromDate.getDate() : fromDate.getDate()} ${fromDate.getHours()}:${fromDate.getMinutes()}:00`,
+                    toTime: `${toDate.getFullYear()}-${toDate.getMonth()}-${(toDate.getDate()< 10) ? '0' + toDate.getDate() : toDate.getDate()} ${toDate.getHours()}:${toDate.getMinutes()}:00`,
+                    duration: duration,
+                    durationDays: durationDays
+                }).where(eq(customers.unitId, unit_id));
+            }else{
+                const getPublic_ID = (await db.select().from(customers).where(eq(customers.unitId, unit_id)))[0].fotoKTP ?? '';
+                //If you want to delete it
+                // await db.delete(customers).where(eq(customers.unitId, unit_id));
+                //if you want to keep it, (update the picture id to null please or just empty string)
+                await db.update(customers).set({
+                    fotoKTP: null,
+                    unitId: null
+                }).where(eq(customers.fotoKTP, getPublic_ID));
+                await db.update(units).set({ 
+                    unitState: 'Ready',
+                    fromTime: null,
+                    toTime: null,
+                    pending: null,
+                    kebersihan: null
+                }).where(eq(units.id, unit_id));
+                await DELETE(getPublic_ID);
+            }
+        } catch (error) {
+            return fail(422, {
+                success: false,
+                message: "Data gagal diubah",
+                error: "Terjadi kesalahan saat data diubah terjadi, harap hubungi developer",
+            })
+        }
+        return {
+			success: true,
+			message: "Data berhasil diubah",
+			error: null
+		}
     },
     absen: async (event) => {
+        console.log("Apa yang terjadi dengan dirimu");
+        const formData: FormData = await event.request.formData();
+        const nama: string = formData.get('name')?.toString() ?? '';
+        const jabatan: "FO" | "HK" | "T" | "H"  = toAccountType(formData.get("accountType")?.toString() ?? '') ?? 'FO';
+        const jamBerapa: string = formData.get("jam")?.toString() ?? '';
+        const [toHour, toMin] = jamBerapa.split(":").map(Number);
+        const trullyJamBerapa: Date = new Date((new Date()).setHours(toHour, toMin, 0, 0));
+        const fotoAbsensi: File = (formData.get("foto") as File);
+        //const unitId: string = formData.get("unit_id")?.toString() ?? '';
+
+        try {
+            const result_upload = await CREATE(fotoAbsensi);
+            //CHECK IF RESULT UPLOAD IS THERE
+            if(!result_upload){
+                return fail(422, {
+                    success: false,
+                    message: "Upload Foto Masalah gagal",
+                    error: "Upload Foto Masalah Gagal dilakukan (entah kenapa)",
+                })
+            }
+            //CHECK IF UPLOAD IS DONE OR ERROR
+            else{
+                await db.insert(absensi).values({
+                    name: nama,
+                    accountType: jabatan,
+                    whenEntry: trullyJamBerapa,
+                    fotoUrl: result_upload.public_id
+                    
+                });
+            }
+        } catch (error) {
+            console.log(error);
+            return fail(422, {
+                success: false,
+                message: "Data gagal diubah",
+                error: "Terjadi kesalahan saat data ditambahkan terjadi, harap hubungi developer",
+            })
+        }
+        return {
+			success: true,
+			message: "Data berhasil ditambahkan",
+			error: null
+		}
 
     },
     masalah: async (event) => {
-        
+        const formData: FormData = await event.request.formData();
+        const nama: string = formData.get("name")?.toString() ?? '';
+        const jabatan: string = formData.get("accountType")?.toString() ?? '';
+        const jamBerapa: string = formData.get("jam")?.toString() ?? '';
+        const [toHour, toMin] = jamBerapa.split(":").map(Number);
+        const trullyJamBerapa: Date = new Date((new Date()).setHours(toHour, toMin, 0, 0));
+        const desc: string = formData.get("masalah")?.toString()  ?? '';
+        const berat: boolean = (formData.get("berat") as unknown as boolean);
+        const fotoMasalah: File = (formData.get("foto") as File);
+        const unitId: string = formData.get("unit_id")?.toString() ?? '';
+        try {
+            const result_upload = await CREATE(fotoMasalah);
+            //CHECK IF RESULT UPLOAD IS THERE
+            if(!result_upload){
+                return fail(422, {
+                    success: false,
+                    message: "Upload Foto Masalah gagal",
+                    error: "Upload Foto Masalah Gagal dilakukan (entah kenapa)",
+                })
+            }
+            //CHECK IF UPLOAD IS DONE OR ERROR
+            else{
+                await db.insert(masalah).values({
+                    unitId: unitId,
+                    name: nama,
+                    accountType: toAccountType(jabatan) ?? 'FO',
+                    imageUrl: result_upload.public_id,
+                    desc: desc,
+                    when: trullyJamBerapa,
+                    berat: berat
+                });
+                if(berat){
+                    await db.update(units).set({
+                        unitState: 'Closed'
+                    }).where(eq(units.id, unitId))
+                    const getPublic_ID = (await db.select().from(customers).where(eq(customers.unitId, unitId)))[0].fotoKTP ?? '';
+                    //If you want to delete it
+                    // await db.delete(customers).where(eq(customers.unitId, unit_id));
+                    //if you want to keep it, (update the picture id to null please or just empty string)
+                    await db.update(customers).set({
+                        fotoKTP: null,
+                        unitId: null
+                    }).where(eq(customers.fotoKTP, getPublic_ID));
+                    await db.update(units).set({ unitState: 'Ready' }).where(eq(units.id, unitId));
+                    console.log(getPublic_ID);
+                    await DELETE(getPublic_ID);
+                }
+                
+            }
+        } catch (error) {
+            console.log(error);
+            return fail(422, {
+                success: false,
+                message: "Data gagal diubah",
+                error: "Terjadi kesalahan saat data ditambahkan terjadi, harap hubungi developer",
+            })
+        }
+        return {
+			success: true,
+			message: "Data berhasil ditambahkan",
+			error: null
+		}
     }
 }

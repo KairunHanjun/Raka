@@ -5,6 +5,8 @@
 	import { enhance } from "$app/forms";
     import type { PageProps } from "./$types";
 	import MessageBox from "$lib/comp/messageBox.svelte";
+    import { page } from '$app/state'
+	import { goto } from "$app/navigation";
 
     interface MsgBox {
         Title?: string;
@@ -31,6 +33,23 @@
     let selamatText: Array<string> = $state([selamatDatangtext[0], selamatDatangtext[1]]);
     let newMsgBox: MsgBox | undefined = $state(undefined);
     let submiting: boolean = $state(false);
+
+    function checkIfExpired(){
+        if(page.url.searchParams.get("reason")){
+            newMsgBox = {
+                Title: "Sesi berakhir",
+                Message: "Sesi anda telah berakhir, harap login ulang",
+                NotificationType: "warning",
+                ButtonType: 'ok',
+                Action: () => {
+                    goto("/");
+                    newMsgBox = undefined!;
+                }
+            }
+        }
+    }
+
+    checkIfExpired();
 </script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -70,7 +89,6 @@
                             Title: "Loadin",
                             Message: "Harap tunggu",
                             NotificationType: 'info',
-                            ButtonType: 'ok',
                             Action: () => {
                             }
                         }

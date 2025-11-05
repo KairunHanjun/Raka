@@ -14,7 +14,7 @@
     title = 'Pesan', 
     children,
     type = 'info' as NotificationType,
-    buttonType = 'ok' as ButtonSetType,
+    buttonType = undefined,
     handleResult = (type: DialogResult) => {},
   } = $props<{
     title?: string;
@@ -79,24 +79,26 @@
         <!-- Kontainer untuk tombol-tombol -->
         <div class="mt-6 flex justify-center gap-4">
           <!-- Menampilkan tombol berdasarkan buttonType -->
-          {#if buttonType === 'ok'}
-            <button onclick={() => {handleResult('ok'); }} class={`${baseButtonClass} max-w-[200px] ${colorClasses.button}`}>
-              OK
-            </button>
-          {:else if buttonType === 'yesno'}
-            <button onclick={() => {handleResult('no'); }} class={`${baseButtonClass} bg-slate-500 hover:bg-slate-600 focus:ring-slate-400`}>
-              No
-            </button>
-            <button onclick={() => {handleResult('yes'); }} class={`${baseButtonClass} ${colorClasses.button}`}>
-              Yes
-            </button>
-          {:else if buttonType === 'subcancel'}
-            <button onclick={() => {handleResult('cancel'); }} class={`${baseButtonClass} bg-slate-500 hover:bg-slate-600 focus:ring-slate-400`}>
-              Cancel
-            </button>
-            <button onclick={() => {handleResult('submit'); }} class={`${baseButtonClass} ${colorClasses.button}`}>
-              Submit
-            </button>
+          {#if buttonType}
+            {#if buttonType === 'ok'}
+              <button onclick={() => {handleResult('ok'); }} class={`${baseButtonClass} max-w-[200px] ${colorClasses.button}`}>
+                OK
+              </button>
+            {:else if buttonType === 'yesno'}
+              <button onclick={() => {handleResult('no'); }} class={`${baseButtonClass} bg-slate-500 hover:bg-slate-600 focus:ring-slate-400`}>
+                No
+              </button>
+              <button onclick={() => {handleResult('yes'); }} class={`${baseButtonClass} ${colorClasses.button}`}>
+                Yes
+              </button>
+            {:else if buttonType === 'subcancel'}
+              <button onclick={() => {handleResult('cancel'); }} class={`${baseButtonClass} bg-slate-500 hover:bg-slate-600 focus:ring-slate-400`}>
+                Cancel
+              </button>
+              <button onclick={() => {handleResult('submit'); }} class={`${baseButtonClass} ${colorClasses.button}`}>
+                Submit
+              </button>
+            {/if}
           {/if}
         </div>
       </main>

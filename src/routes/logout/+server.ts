@@ -10,5 +10,5 @@ export const GET: RequestHandler = async (event) => {
     }
     
     deleteSessionTokenCookie(event, '/');
-    throw redirect(302, '/');
+    redirect(302, '/');
 };

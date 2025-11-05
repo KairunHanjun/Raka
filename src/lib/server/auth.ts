@@ -5,7 +5,7 @@ import { encodeBase64url, encodeHexLowerCase } from '@oslojs/encoding';
 import { db } from '$lib/server/db';
 import * as table from '$lib/server/db/schema';
 
-const DAY_IN_MS = 1000 * 60 * 60 * 24;
+const FIFTEEN_MINUTES_IN_MS = 15 * 60 * 1000;
 
 export const sessionCookieName = 'auth-session';
 
@@ -20,7 +20,7 @@ export async function createSession(token: string, userId: string): Promise<{ id
 	const session: table.Session = {
 		id: sessionId,
 		userId,
-		expiresAt: new Date(Date.now() + DAY_IN_MS * 30)
+		expiresAt: new Date(Date.now() + FIFTEEN_MINUTES_IN_MS)
 	};
 	await db.insert(table.session).values(session);
 	return session;
@@ -39,13 +39,14 @@ export async function validateSessionToken(token: string): Promise<{
 		accountType: "FO" | "HK" | "T" | "H";
         id: string;
         username: string;
+		createdByWho: string;
     };
 }> {
 	const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
 	const [result] = await db
 		.select({
 			// Adjust user table here to tweak returned data
-			user: { id: table.accounts.id, username: table.accounts.username, accountType: table.accounts.accountType},
+			user: { id: table.accounts.id, username: table.accounts.username, accountType: table.accounts.accountType, createdByWho: table.accounts.createdByWho},
 			session: table.session
 		})
 		.from(table.session)
@@ -63,9 +64,9 @@ export async function validateSessionToken(token: string): Promise<{
 		return { session: null, user: null };
 	}
 
-	const renewSession = Date.now() >= session.expiresAt.getTime() - DAY_IN_MS * 15;
+	const renewSession = Date.now() >= session.expiresAt.getTime() - 5 * 60 * 1000;
 	if (renewSession) {
-		session.expiresAt = new Date(Date.now() + DAY_IN_MS * 30);
+		session.expiresAt = new Date(Date.now() + FIFTEEN_MINUTES_IN_MS);
 		await db
 			.update(table.session)
 			.set({ expiresAt: session.expiresAt })

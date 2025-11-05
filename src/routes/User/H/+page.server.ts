@@ -5,9 +5,9 @@ import type { Actions, PageServerLoad } from "./$types";
 import { hash } from "argon2";
 import { generateIdFromEntropySize } from "lucia";
 import { db } from "$lib/server/db";
-import { accounts, agents, units } from "$lib/server/db/schema";
+import { absensi, accounts, agents, customers, kebersihan, masalah, units } from "$lib/server/db/schema";
 import { eq, ne, and } from "drizzle-orm/sql/expressions/conditions";
-import { asc } from "drizzle-orm";
+import { asc, desc } from "drizzle-orm";
 import { deleteSessionTokenCookie, invalidateSession, sessionCookieName } from "$lib/server/auth";
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -21,19 +21,57 @@ export const load: PageServerLoad = async ({ locals }) => {
 			accountType: accounts.accountType
 		}).from(accounts).where(and(ne(accounts.accountType, 'H'), eq(accounts.createdByWho, locals.user.username)));
 		//Get Unit
-		const dataUnits = await db.select().from(units).orderBy(asc(units.unitState));
+		const dataUnits = await db.select().from(units).where(eq(units.createdByWho, locals.user.username)).orderBy(asc(units.unitState));
 		//Get Agent
 		const dataAgents = await db.select().from(agents).where(eq(agents.createdByWho, locals.user.username));
-		//TODO: Get Masalah
-
-		//TODO: Get Absensi
-
-		//console.log(dataUnits);
+		//Get Masalah
+		const dataMasalah = await db
+		.select({
+			id: masalah.id,
+			unitId: masalah.unitId,
+			desc: masalah.desc,
+			imageUrl: masalah.imageUrl,
+			when: masalah.when,
+		})
+		.from(masalah)
+		.leftJoin(units, eq(masalah.unitId, units.id))
+		.innerJoin(accounts, eq(units.createdByWho, accounts.username))
+		.where(eq(accounts.createdByWho, locals.user.username));
+		//console.log(dataMasalah);
+		//Get Absensi
+		const dataAbsensi = await db
+		.select({
+			id: absensi.id,
+			name: absensi.name,
+			accountType: absensi.accountType,
+			when: absensi.whenEntry,
+			fotoUrl: absensi.fotoUrl
+		})
+		.from(absensi)
+		.innerJoin(accounts, eq(absensi.name, accounts.username))
+		.where(eq(accounts.createdByWho, locals.user.username));
+		//Get Kebersihan
+		const dataKebersihan = await db
+        .select({
+            id: kebersihan.id,
+            when: kebersihan.when,
+            imgRuang: kebersihan.gambarRuangan,
+            imgMandi: kebersihan.gambarKamarMandi,
+            approve: kebersihan.approve
+        })
+        .from(units)
+        .innerJoin(kebersihan, eq(units.kebersihan, kebersihan.id))
+        .innerJoin(accounts, eq(kebersihan.name, accounts.username))
+        .where(and(eq(accounts.createdByWho, units.createdByWho)));
 		const userNow = locals.user;
+		
 		return {
 			dataAkun,
 			dataUnits,
 			dataAgents,
+			dataKebersihan,
+			dataAbsensi,
+			dataMasalah,
 			userNow
 		}
 	} catch (error) {
@@ -46,6 +84,42 @@ export const load: PageServerLoad = async ({ locals }) => {
 }
 
 export const actions: Actions = {
+	approve: async (event) => {
+		const fromData: FormData = await event.request.formData();
+		const unitId: string = fromData.get('unitId')?.toString() ?? '';
+		const kebersihanId: string = fromData.get('kebersihanId')?.toString() ?? '';
+		const approve: boolean = ((fromData.get('approve')?.toString() ?? '') == "Terima") ? true : false;
+		try {
+			if(approve){
+				const customers_get = await db
+				.select()
+				.from(customers)
+				.where(eq(customers.unitId, unitId))
+				.orderBy(desc(customers.fromTime))
+				.limit(1);
+				await db.update(units).set({
+					kebersihan: null,
+					pending: false,
+					unitState: 'Working',
+					fromTime: customers_get[0].fromTime,
+					toTime: customers_get[0].toTime,
+				}).where(eq(units.id, unitId));
+				await db.delete(kebersihan).where(eq(kebersihan.id, kebersihanId));
+			}else{
+				await db.update(kebersihan).set({
+					approve: false,
+					gambarRuangan: "",
+					gambarKamarMandi: "",
+				}).where(eq(kebersihan.id, kebersihanId));
+				await db.update(units).set({
+					pending: false
+				}).where(eq(units.kebersihan, kebersihanId));
+			}
+			await db.update(units)
+		} catch (error) {
+			
+		}
+	},
 	addAgent: async (event) => {
 		const fromData: FormData = await event.request.formData();
 		const AgentName: string = (fromData.get("AgentName"))?.toString() ?? '';
@@ -82,7 +156,8 @@ export const actions: Actions = {
 				nameUnit: UnitName as string,
 				unitState: Status as any,
 				fromTime: (FromTime) ? (FromTime as string) : null,
-				toTime: (ToTime) ? (ToTime as string) : null
+				toTime: (ToTime) ? (ToTime as string) : null,
+				createdByWho: event.locals.user?.username
 			});
 		} catch (error) {
 			return fail(422, {
