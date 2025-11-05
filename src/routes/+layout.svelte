@@ -24,7 +24,8 @@
 <svelte:head>
 	<link rel="icon" href={favicon} />
 	<link rel="manifest" href="/manifest.json" />
-  	<meta name="theme-color" content="#0d9488" />
+  	<meta name="theme-color" content="#F4E6D8" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#5D4037" media="(prefers-color-scheme: dark)" />
 </svelte:head>
 
 <style lang="postcss">

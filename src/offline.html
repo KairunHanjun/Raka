@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- Ensures proper rendering and touch zooming on mobile devices -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anda Sedang Offline</title>
+    
+    <!-- Custom styles and font import -->
+    <style>
+        /* Import the 'Inter' font family */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+
+        /* CSS Reset and Base Styles */
+        body, html {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            height: 100%;
+        }
+
+        /* Apply base styles to the body */
+        body {
+            /* Set the font for the entire page */
+            font-family: 'Inter', sans-serif;
+            
+            /* Background color from your image */
+            background-color: #212121;
+            
+            /* Default text color */
+            color: #ffffff;
+            
+            /* Flexbox for centering */
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            align-items: center;
+            justify-content: center;
+            
+            /* Padding for spacing, matches 'p-6' */
+            padding: 1.5rem; 
+        }
+
+        /* Main content wrapper */
+        .content-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            max-width: 28rem; /* 448px, matches 'max-w-md' */
+        }
+
+        /* Logo container */
+        .logo {
+            position: relative;
+            width: 8rem; /* 128px, matches 'w-32' */
+            height: 8rem; /* 128px, matches 'h-32' */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1rem; /* 16px, matches 'mb-4' */
+        }
+
+        /* The 'R' in the logo */
+        .logo-r {
+            font-size: 6rem; /* matches 'text-9xl' */
+            font-weight: 800; /* matches 'font-extrabold' */
+            color: white;
+            z-index: 10;
+            transform: translateX(-0.5rem); /* matches '-translate-x-2' */
+        }
+
+        /* The 'Q' in the logo */
+        .logo-q {
+            font-size: 5rem; /* matches 'text-8xl' */
+            font-weight: 800; /* matches 'font-extrabold' */
+            color: #4a73ff; /* Custom blue color */
+            position: absolute;
+            z-index: 20;
+            top: 1.5rem; /* 24px, matches 'top-6' */
+            transform: translateX(1rem); /* 16px, matches 'translate-x-4' */
+        }
+
+        /* Brand Name */
+        .brand-name {
+            font-size: 3rem; /* matches 'text-5xl' */
+            font-weight: 700; /* matches 'font-bold' */
+            color: white;
+            margin-bottom: 4rem; /* 64px, matches 'mb-16' */
+        }
+
+        /* Offline Title */
+        .title {
+            font-size: 2.25rem; /* 36px, matches 'text-4xl' */
+            line-height: 2.5rem;
+            font-weight: 600; /* matches 'font-semibold' */
+            color: white;
+            margin-bottom: 1rem; /* 16px, matches 'mb-4' */
+        }
+
+        /* Offline Subtitle */
+        .subtitle {
+            font-size: 1.125rem; /* 18px, matches 'text-lg' */
+            line-height: 1.75rem;
+            color: #c4c4c4; /* Custom gray color */
+        }
+
+        /* Responsive styles for screens 640px and wider.
+          This replaces the 'sm:' prefixes from Tailwind.
+        */
+        @media (min-width: 640px) {
+            .title {
+                font-size: 3rem; /* 48px, matches 'sm:text-5xl' */
+                line-height: 1;
+            }
+
+            .subtitle {
+                font-size: 1.25rem; /* 20px, matches 'sm:text-xl' */
+                line-height: 1.75rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 
+      Main content wrapper.
+      All styling is now applied via the CSS classes in the <style> tag.
+    -->
+    <div class="content-wrapper">
+
+        <!-- Logo -->
+        <div class="logo">
+            <span class="logo-r">R</span>
+            <span class="logo-q">Q</span>
+        </div>
+
+        <!-- Brand Name -->
+        <h1 class="brand-name">
+            RoomQu
+        </h1>
+
+        <!-- Offline Title -->
+        <h2 class="title">
+            Anda Sedang Offline
+        </h2>
+
+        <!-- Offline Subtitle -->
+        <p class="subtitle">
+            Silahkan koneksikan kembali perangkat anda ke internet
+        </p>
+
+    </div>
+
+</body>
+</html>

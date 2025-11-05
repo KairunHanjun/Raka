@@ -57,7 +57,7 @@ self.addEventListener('fetch', (event: { respondWith?: any; request?: any; }) =>
 
             return response;
         } catch (err) {
-            const response = await cache.match('/offline');
+            const response = await cache.match('offline.html');
 
             if (response) {
                 console.log(`Returning from Cache`, event.request.url);
