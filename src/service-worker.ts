@@ -4,6 +4,7 @@ import { build, files, version } from '$service-worker';
 
 declare const self: ServiceWorkerGlobalScope;
 
+const OFFLINE_URL = '/offline.html';
 const CACHE_NAME = `cache-${version}`;
 const ASSETS = [...build, ...files];
 
@@ -15,15 +16,21 @@ self.addEventListener('install', (event: { waitUntil: (arg0: Promise<void>) => v
 
 self.addEventListener('activate', (event: { waitUntil: (arg0: Promise<void>) => void; }) => {
   event.waitUntil(
-    caches.keys().then(async (keys) => {
-      for (const key of keys) {
-        if (key !== CACHE_NAME) await caches.delete(key);
+    (async () => {
+      caches.keys().then(async (keys) => {
+        for (const key of keys) {
+          if (key !== CACHE_NAME) await caches.delete(key);
+        }
+      });
+      if ("navigationPreload" in self.registration) {
+        await self.registration.navigationPreload.enable();
       }
-    })
+    })()
   );
+  self.clients.claim();
 });
 
-self.addEventListener('fetch', (event: { respondWith?: any; request?: any; }) => {
+self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method !== 'GET') return;
 
@@ -43,6 +50,12 @@ self.addEventListener('fetch', (event: { respondWith?: any; request?: any; }) =>
         // for everything else, try the network first, but
         // fall back to the cache if we're offline
         try {
+          // First, try to use the navigation preload response if it's
+          // supported.
+          const preloadResponse = await event.preloadResponse;
+          if (preloadResponse) {
+            return preloadResponse;
+          }
             const response = await fetch(event.request);
 
             // if we're offline, fetch can return a value that is not a Response
@@ -71,5 +84,7 @@ self.addEventListener('fetch', (event: { respondWith?: any; request?: any; }) =>
     }
 
 
-  event.respondWith(respond());
+  event.respondWith(respond().catch(() => {
+    return caches.match(OFFLINE_URL);
+  }));
 });

@@ -1,9 +1,11 @@
 <script lang="ts">
 	import '../app.css';
 	import favicon from '$lib/assets/favicon.svg';
+	import { onMount } from 'svelte';
 
 	let { children } = $props();
-
+	let data = null;
+  	let error = null;
 	if ('serviceWorker' in navigator) {
 
 		const registration = navigator.serviceWorker.register('/service-worker.ts')
@@ -17,7 +19,7 @@
 		})
 		.catch((err) => console.error('SW registration failed:', err));
 		
-    
+	
 	}
 </script>
 
