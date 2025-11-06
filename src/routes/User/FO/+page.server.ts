@@ -57,7 +57,7 @@ export const load: PageServerLoad = async ({ locals }) => {
         }
     }catch(error){
         return { 
-            error: ((error as Error).cause as string) ?? '',
+            error: ((error as Error).message as string) ?? '',
             description: "Terjadi kesalahan saat mengambil data",
             userNow: locals.user
         };

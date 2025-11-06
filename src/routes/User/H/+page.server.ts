@@ -136,7 +136,7 @@ export const actions: Actions = {
 			return fail(422, {
 				success: false,
 				message: "Data gagal ditambahkan",
-				error: (error as Error).cause,
+				error: (error as Error).message,
 			})
 		}
 		return {
@@ -163,7 +163,7 @@ export const actions: Actions = {
 			return fail(422, {
 				success: false,
 				message: "Data gagal ditambahkan",
-				error: (error as Error).cause,
+				error: (error as Error).message,
 			})
 		}
 		return {
@@ -254,7 +254,7 @@ export const actions: Actions = {
 			return fail(422, {
 				success: false,
 				message: "Gagal terjadi kesalahan",
-				error: (error as Error).cause,
+				error: (error as Error).message,
 			})
 		}
 		return {
@@ -280,7 +280,7 @@ export const actions: Actions = {
 			return fail(422, {
 				success: false,
 				message: "Gagal terjadi kesalahan",
-				error: (error as Error).cause,
+				error: (error as Error).message,
 			})
 		}
 		return {

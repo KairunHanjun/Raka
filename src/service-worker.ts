@@ -85,6 +85,7 @@ self.addEventListener('fetch', (event) => {
 
 
   event.respondWith(respond().catch(() => {
+    console.log('Offline Mode Activated');
     return caches.match(OFFLINE_URL);
   }));
 });

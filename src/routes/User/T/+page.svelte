@@ -6,7 +6,9 @@
 	import ListingComp from "$lib/comp/listingComp.svelte";
 	import MessageBox from "$lib/comp/messageBox.svelte";
 	import TopActionCard from "$lib/comp/topActionCard.svelte";
+	import { onMount } from "svelte";
     import type { PageProps } from "./$types";
+	import { browser } from "$app/environment";
     let { data, form }: PageProps = $props();
 
     const editOther: string[] = $state([]);
@@ -127,7 +129,6 @@
     let edit: boolean = $state(false);
     let editName: string = $state("");
     let editId: string = $state("");
-    let editAny: any | undefined = $state(undefined);
     let menuClick: string | undefined = $state(undefined);
     let bindThisSelect: HTMLSelectElement | undefined = $state(undefined);
     let bindThisInput: HTMLInputElement | undefined = $state(undefined);
@@ -138,7 +139,6 @@
     let submiting = $state(false);
     let error = $state(false);
     let lihatAbsen: boolean = $state(false);
-    let lihatMasalah: boolean = $state(false);
     let masalahLihat: boolean = $state(false);
     let inspeksiMasalah: boolean = $state(false);
     let dataMasalahTerkini: string[] = $state([]);
@@ -154,8 +154,54 @@
         return () => clearInterval(timer);
     });
 
+    $effect(() => {
+		const interval = setInterval(async () => {
+			if (navigator.onLine) {
+				try {
+					await invalidateAll();
+					refreshData();
+				} catch (err) {}
+			} else {
+			}
+		}, 5 * 60 * 1000); // every 5 minutes
+
+		return () => clearInterval(interval);
+	});
+
+    onMount(() => {
+        if(browser){
+            let online = navigator.onLine;
+            window.addEventListener('online', () => (online = true));
+            window.addEventListener('offline', () => (online = false));
+            // Intercept F5 / Ctrl+R / Cmd+R when offline
+            const blockReloadKeys = (e: KeyboardEvent) => {
+                const isReloadKey =
+                    e.key === 'F5' ||
+                    ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'r');
+
+                if (!navigator.onLine && isReloadKey) {
+                    e.preventDefault();
+                }
+            };
+
+            window.addEventListener('keydown', blockReloadKeys);
+
+            return () => {
+                window.removeEventListener('keydown', blockReloadKeys);
+            };
+        }
+    });
+
     refreshData();
 </script>
+
+{#if navigator.onLine}
+    <MessageBox title={"Offline Mode"} type={'warning'} handleResult={() => {}}>
+        <div class="w-full h-fit flex flex-col justify-between items-center object-center text-center">
+            <p class=" text-amber-300">Anda terputus dari koneksi internet, silahkan hubungkan kembali koneksi internet anda</p>
+        </div>
+    </MessageBox>
+{/if}
 
 {#if ((form?.error) || (data?.error))}
     {error = true}
@@ -312,7 +358,7 @@
                                     await update();
                                     deleteArray(newMsgBox, "Loading");
                                     edit = false;
-                                    invalidateAll();
+                                    await invalidateAll();
                                     refreshData();
                                     if(form?.success){
                                         newMsgBox.push({
@@ -481,7 +527,7 @@
                             deleteArray(newMsgBox, "Loading");
                             await update();
                             edit = false;
-                            invalidateAll();
+                            await invalidateAll();
                             refreshData();
                             if(form?.success){
                                 newMsgBox.push({
@@ -526,7 +572,7 @@
     {/if}
 </div>
 
-<svelte:window on:focus={() => {
-    invalidateAll();
+<svelte:window on:focus={async () => {
+    await invalidateAll();
     refreshData();
 }} />

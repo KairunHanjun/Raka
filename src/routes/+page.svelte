@@ -7,6 +7,8 @@
 	import MessageBox from "$lib/comp/messageBox.svelte";
     import { page } from '$app/state'
 	import { goto } from "$app/navigation";
+	import { browser } from "$app/environment";
+	import { onMount } from "svelte";
 
     interface MsgBox {
         Title?: string;
@@ -48,6 +50,30 @@
             }
         }
     }
+	
+    onMount(() => {
+        if(browser){
+            let online = navigator.onLine;
+            window.addEventListener('online', () => (online = true));
+            window.addEventListener('offline', () => (online = false));
+            // Intercept F5 / Ctrl+R / Cmd+R when offline
+            const blockReloadKeys = (e: KeyboardEvent) => {
+                const isReloadKey =
+                    e.key === 'F5' ||
+                    ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'r');
+
+                if (!navigator.onLine && isReloadKey) {
+                    e.preventDefault();
+                }
+            };
+
+            window.addEventListener('keydown', blockReloadKeys);
+
+            return () => {
+                window.removeEventListener('keydown', blockReloadKeys);
+            };
+        }
+    });
 
     checkIfExpired();
 </script>
@@ -55,6 +81,14 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
+
+{#if navigator.onLine}
+    <MessageBox title={"Offline Mode"} type={'warning'} handleResult={() => {}}>
+        <div class="w-full h-fit flex flex-col justify-between items-center object-center text-center">
+            <p class=" text-amber-300">Anda terputus dari koneksi internet, silahkan hubungkan kembali koneksi internet anda</p>
+        </div>
+    </MessageBox>
+{/if}
 
 {#if newMsgBox}
     <MessageBox title={newMsgBox?.Title} type={newMsgBox.NotificationType} buttonType={newMsgBox.ButtonType} handleResult={newMsgBox.Action}>

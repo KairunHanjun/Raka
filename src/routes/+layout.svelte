@@ -33,7 +33,9 @@
 <style lang="postcss">
   :global(body) {
     background-color:  #141517;
+	overscroll-behavior-y: contain;
   }
+  
 </style>
 
 

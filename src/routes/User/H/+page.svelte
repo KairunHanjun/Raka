@@ -10,7 +10,9 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
 	import ListingComp from "$lib/comp/listingComp.svelte";
 	import MessageBox from "$lib/comp/messageBox.svelte";
 	import TopActionCard from "$lib/comp/topActionCard.svelte";
+	import { onMount } from "svelte";
 	import type { PageProps } from "./$types";
+	import { browser } from "$app/environment";
 
     let deleteFormData: Array<{
         action: string;
@@ -356,8 +358,55 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
             }
         }
     }
+
+    $effect(() => {
+		const interval = setInterval(async () => {
+			if (navigator.onLine) {
+				try {
+					await invalidateAll();
+					refreshData();
+				} catch (err) {}
+			} else {
+			}
+		}, 5 * 60 * 1000); // every 5 minutes
+
+		return () => clearInterval(interval);
+	});
+
+    onMount(() => {
+        if(browser){
+            let online = navigator.onLine;
+            window.addEventListener('online', () => (online = true));
+            window.addEventListener('offline', () => (online = false));
+            // Intercept F5 / Ctrl+R / Cmd+R when offline
+            const blockReloadKeys = (e: KeyboardEvent) => {
+                const isReloadKey =
+                    e.key === 'F5' ||
+                    ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'r');
+
+                if (!navigator.onLine && isReloadKey) {
+                    e.preventDefault();
+                }
+            };
+
+            window.addEventListener('keydown', blockReloadKeys);
+
+            return () => {
+                window.removeEventListener('keydown', blockReloadKeys);
+            };
+        }
+    });
+
     refreshData();
 </script>
+
+{#if navigator.onLine}
+    <MessageBox title={"Offline Mode"} type={'warning'} handleResult={() => {}}>
+        <div class="w-full h-fit flex flex-col justify-between items-center object-center text-center">
+            <p class=" text-amber-300">Anda terputus dari koneksi internet, silahkan hubungkan kembali koneksi internet anda</p>
+        </div>
+    </MessageBox>
+{/if}
 
 {#if newMsgBox}
     <MessageBox title={newMsgBox?.Title} type={newMsgBox.NotificationType} buttonType={newMsgBox.ButtonType} handleResult={newMsgBox.Action}>
@@ -849,7 +898,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                         await update();
                         lihatRooms2 = false;
                         emptiedArray(dataMasalahTerkini);
-                        invalidateAll();
+                        await invalidateAll();
                         refreshData();
                         if(form?.success){
                             newMsgBox = {
@@ -1079,7 +1128,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
     {/if}
 </div>
 
-<svelte:window on:focus={() => {
-    invalidateAll();
+<svelte:window on:focus={async () => {
+    await invalidateAll();
     refreshData();
 }} />

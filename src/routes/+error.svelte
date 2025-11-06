@@ -51,6 +51,28 @@
         }
     }
 
+    let online = navigator.onLine;
+	let previousPath = page.url.pathname;
+	let interval: ReturnType<typeof setInterval> | null = null;
+
+	// Detect if this error looks like an offline/network error
+	const isOfflineError =
+		!online || page.status === 500 || page.error?.message?.includes('Failed to fetch');
+
+	if (isOfflineError) {
+		$effect(() => {
+			interval = setInterval(() => {
+				if (navigator.onLine) {
+					clearInterval(interval!);
+					console.log('✅ Back online — returning to', previousPath);
+					goto(previousPath);
+				}
+			}, 1000);
+
+			return () => clearInterval(interval!);
+		});
+	}
+
     checkIfExpired();
 </script>
 
@@ -89,12 +111,12 @@
 
     <div class="flex-col justify-center items-center text-center object-center w-screen h-fit">
         <enhanced:img src={logo} alt="LOGO" width=200 height=200 class="mx-auto" />
-        <div class="flex w-screen h-fit items-center justify-center text-center p-2 mt-20">
+        <div class="flex flex-col w-screen h-fit items-center justify-center text-center p-2 mt-20">
             <SelamatDatang sayText1={"Halaman tidak ditemukan"} text2Say={"Silahkan kembali ke halaman awal dengan tombol dibawah ini"} text1Bold={true} text1Size="2rem" text2Size="1rem" class="text-white"/>
-        </div>
-        <ActionCard label="Kembali ke halaman awal" class="bg-gradient-to-b from-red-600 via-red-700 to-red-800 p-3.5" onclick={() => {
+            <ActionCard useSVG={false} label="Kembali ke halaman awal" class="flex bg-gradient-to-b from-red-600 via-red-700 to-red-800 p-3.5" onclick={() => {
                 goto('/')
             }}>
         </ActionCard>
+        </div>
     </div>
 {/if}
