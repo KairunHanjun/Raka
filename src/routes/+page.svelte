@@ -82,7 +82,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
 
-{#if navigator.onLine}
+{#if !navigator.onLine}
     <MessageBox title={"Offline Mode"} type={'warning'} handleResult={() => {}}>
         <div class="w-full h-fit flex flex-col justify-between items-center object-center text-center">
             <p class=" text-amber-300">Anda terputus dari koneksi internet, silahkan hubungkan kembali koneksi internet anda</p>

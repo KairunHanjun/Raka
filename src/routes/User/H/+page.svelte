@@ -400,7 +400,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
     refreshData();
 </script>
 
-{#if navigator.onLine}
+{#if !navigator.onLine}
     <MessageBox title={"Offline Mode"} type={'warning'} handleResult={() => {}}>
         <div class="w-full h-fit flex flex-col justify-between items-center object-center text-center">
             <p class=" text-amber-300">Anda terputus dari koneksi internet, silahkan hubungkan kembali koneksi internet anda</p>
