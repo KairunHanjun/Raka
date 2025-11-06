@@ -279,6 +279,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
     let getData: any = $state(false);
     let editData: any = $state(false);
     let masalahLihat: boolean = $state(false);
+    let isOnline: boolean = $state(true);
     function refreshData() {
         emptiedArray(userItems);
         emptiedArray(unitItems);
@@ -361,6 +362,14 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
 
     $effect(() => {
 		const interval = setInterval(async () => {
+			isOnline = navigator.onLine;
+		}, 1000); // every 0.5 minutes
+
+		return () => clearInterval(interval);
+	});
+
+    $effect(() => {
+		const interval = setInterval(async () => {
 			if (navigator.onLine) {
 				try {
 					await invalidateAll();
@@ -400,7 +409,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
     refreshData();
 </script>
 
-{#if !navigator.onLine}
+{#if !isOnline}
     <MessageBox title={"Offline Mode"} type={'warning'} handleResult={() => {}}>
         <div class="w-full h-fit flex flex-col justify-between items-center object-center text-center">
             <p class=" text-amber-300">Anda terputus dari koneksi internet, silahkan hubungkan kembali koneksi internet anda</p>

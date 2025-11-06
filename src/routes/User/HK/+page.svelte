@@ -143,10 +143,12 @@
     let error = $state(false);
     let lihatAbsen: boolean = $state(false);
     let editApprove: string | undefined = $state(undefined);
+    let isOnline: boolean = $state(true);
 
     $effect(() => {
         const timer = setInterval(() => {
             now = new Date();
+            isOnline = navigator.onLine;
         }, 1000);
         // Membersihkan interval saat komponen dihancurkan
         return () => clearInterval(timer);
@@ -162,6 +164,14 @@
 			} else {
 			}
 		}, 5 * 60 * 1000); // every 5 minutes
+
+		return () => clearInterval(interval);
+	});
+
+    $effect(() => {
+		const interval = setInterval(async () => {
+			navigator.onLine
+		}, 500); // every 0.5 minutes
 
 		return () => clearInterval(interval);
 	});
@@ -193,7 +203,7 @@
     refreshData();
 </script>
 
-{#if !navigator.onLine}
+{#if !isOnline}
     <MessageBox title={"Offline Mode"} type={'warning'} handleResult={() => {}}>
         <div class="w-full h-fit flex flex-col justify-between items-center object-center text-center">
             <p class=" text-amber-300">Anda terputus dari koneksi internet, silahkan hubungkan kembali koneksi internet anda</p>

@@ -136,6 +136,15 @@
     let error = $state(false);
     let lihatAbsen: boolean = $state(false);
     let bindThisButton: HTMLButtonElement | undefined = $state(undefined);
+    let isOnline: boolean = $state(true);
+
+    $effect(() => {
+		const interval = setInterval(async () => {
+			isOnline = navigator.onLine;
+		}, 1000); // every 0.5 minutes
+
+		return () => clearInterval(interval);
+	});
 
     $effect(() => {
         const timer = setInterval(() => {
@@ -186,7 +195,7 @@
     refreshData();
 </script>
 
-{#if !navigator.onLine}
+{#if !isOnline}
     <MessageBox title={"Offline Mode"} type={'warning'} handleResult={() => {}}>
         <div class="w-full h-fit flex flex-col justify-between items-center object-center text-center">
             <p class=" text-amber-300">Anda terputus dari koneksi internet, silahkan hubungkan kembali koneksi internet anda</p>

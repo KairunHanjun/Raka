@@ -35,6 +35,7 @@
     let selamatText: Array<string> = $state([selamatDatangtext[0], selamatDatangtext[1]]);
     let newMsgBox: MsgBox | undefined = $state(undefined);
     let submiting: boolean = $state(false);
+    let isOnline: boolean = $state(true);
 
     function checkIfExpired(){
         if(page.url.searchParams.get("reason")){
@@ -50,12 +51,25 @@
             }
         }
     }
+
+    $effect(() => {
+		const interval = setInterval(async () => {
+			isOnline = navigator.onLine;
+		}, 1000); // every 0.5 minutes
+
+		return () => clearInterval(interval);
+	});
 	
     onMount(() => {
         if(browser){
-            let online = navigator.onLine;
-            window.addEventListener('online', () => (online = true));
-            window.addEventListener('offline', () => (online = false));
+            window.addEventListener('online', () => {
+                console.log("You are now connected to the network.");
+                isOnline = true;
+            });
+            window.addEventListener('offline', () => {
+                console.log("You are not connected to the network.");
+                isOnline = false;
+            });
             // Intercept F5 / Ctrl+R / Cmd+R when offline
             const blockReloadKeys = (e: KeyboardEvent) => {
                 const isReloadKey =
@@ -82,7 +96,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
 
-{#if !navigator.onLine}
+{#if !isOnline}
     <MessageBox title={"Offline Mode"} type={'warning'} handleResult={() => {}}>
         <div class="w-full h-fit flex flex-col justify-between items-center object-center text-center">
             <p class=" text-amber-300">Anda terputus dari koneksi internet, silahkan hubungkan kembali koneksi internet anda</p>
