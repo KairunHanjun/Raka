@@ -1,26 +1,10 @@
 <script lang="ts">
 	import '../app.css';
 	import favicon from '$lib/assets/favicon.svg';
-	import { onMount } from 'svelte';
 
 	let { children } = $props();
 	let data = null;
   	let error = null;
-	if ('serviceWorker' in navigator) {
-
-		const registration = navigator.serviceWorker.register('/service-worker.ts')
-		.then((event) => {
-			if (event.installing)
-				console.log('Service Worker is installing')
-			else if (event.waiting)
-				console.log('Service Worker is installed and waiting')
-			else if (event.active)
-				console.log('Service Worker is active')
-		})
-		.catch((err) => console.error('SW registration failed:', err));
-		
-	
-	}
 </script>
 
 <svelte:head>

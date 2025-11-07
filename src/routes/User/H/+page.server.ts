@@ -73,6 +73,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 					price: customers.price,
 					duration: customers.duration,
 					agents: customers.agent,
+					fromTime: customers.fromTime,
+					toTime: customers.toTime
 				})
 				.from(customers)
 				.innerJoin(accounts, eq(customers.hostName, accounts.username))
