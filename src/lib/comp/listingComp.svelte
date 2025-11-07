@@ -76,7 +76,7 @@
                   </div>
                   <button 
                       onclick={item.editEvent}
-                      class="hover:bg-blue-700 p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-white z-255"
+                      class="hover:bg-blue-700 p-2 rounded-full focus:outline-none focus:ring-2 focus:ring-white z-3"
                       aria-label="Edit {item.name}"
                   >
                       <!-- Ikon Pengaturan (SVG) -->

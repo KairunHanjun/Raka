@@ -109,6 +109,14 @@ export const actions: Actions = {
 		const approve: boolean = ((fromData.get('approve')?.toString() ?? '') == "Terima") ? true : false;
 		try {
 			if(approve){
+				const check_kebersihan = await db.select().from(kebersihan).where(eq(kebersihan.id, kebersihanId));	
+				if(check_kebersihan.length === 0){
+					return fail(422, {
+						success: false,
+						message: "Data telah disetujui dari tempat lain",
+						error: "Already Approve",
+					});
+				}
 				const customers_get = await db
 				.select()
 				.from(customers)
@@ -135,8 +143,18 @@ export const actions: Actions = {
 			}
 			await db.update(units)
 		} catch (error) {
-			
+			return fail(422, {
+				success: false,
+				message: "Data gagal disetujui",
+				error: (error as Error).message,
+			})
 		}
+		return {
+			success: true,
+			message: "Data berhasil disetujui",
+			error: null,
+		}
+			
 	},
 	addAgent: async (event) => {
 		const fromData: FormData = await event.request.formData();
@@ -370,8 +388,16 @@ export const actions: Actions = {
 	},
 	deleteAgent: async (event) => {
 		const formData: FormData = await event.request.formData();
-		const IdAgent: string = (formData.get("AgentName"))?.toString() ?? '';
+		const IdAgent: string = (formData.get("agentName"))?.toString() ?? '';
 		try {
+			const check_agent_still_there = await db.select().from(agents).where(eq(agents.nameAgent, (IdAgent as string)));
+			if(check_agent_still_there.length === 0)
+				return fail(422, {
+					success: false,
+					message: "Data agent telah dihapus dari tempat lain",
+					error: "Already Deleted",
+				});
+			
 			await db.delete(agents).where(eq(agents.nameAgent, (IdAgent as string)));
 		} catch (error) {
 			//console.log("Delete Data Error...");
@@ -391,6 +417,13 @@ export const actions: Actions = {
 		const formData: FormData = await event.request.formData();
 		const unitName: string = (formData.get("unitName"))?.toString() ?? '';
 		try {
+			const check_unit_still_there = await db.select().from(units).where(eq(units.nameUnit, (unitName as string)));
+			if(check_unit_still_there.length === 0)
+				return fail(422, {
+					success: false,
+					message: "Data agent telah dihapus dari tempat lain",
+					error: "Already Deleted",
+				});
 			await db.delete(units).where(eq(units.nameUnit, (unitName as string)));
 		} catch (error) {
 			//console.log("Delete Data Error...");
@@ -412,6 +445,13 @@ export const actions: Actions = {
 		//console.log(formData);
 		const id: string = (formData.get("id"))?.toString() ?? '';
 		try {
+			const check_accounts_still_there = await db.select().from(accounts).where(eq(accounts.id, (id as string)));
+			if(check_accounts_still_there.length === 0)
+				return fail(422, {
+					success: false,
+					message: "Data agent telah dihapus dari tempat lain",
+					error: "Already Deleted",
+				});
 			await db.delete(accounts).where(eq(accounts.id, (id as string)));
 		} catch (error) {
 			//console.log("Delete Data Error...");

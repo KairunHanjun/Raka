@@ -175,22 +175,29 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
         pending: boolean;
         kebersihan: string | null;
     };
+
+    function deleteArray(arrayHere: Array<any>, idToDelete: string){
+        const theIndex: number = arrayHere.findIndex(
+            item => item.Title?.toLowerCase() === idToDelete.toLowerCase()
+        );
+        if( theIndex != -1){
+            arrayHere.splice(theIndex, 1);
+        }
+    }
+
     let rooms: Array<Rooms> = $state([]);
     let unitItems: UnitItem[] = $state([])
     let agentItems: UnitItem[] = $state([])
-    let ExclusiveButtonType: 'ok' | 'yesno' | 'subcancel' | undefined = 'yesno';
     function hapusUnitMsgBox(deleteWhat: 'unit' | 'agent'){
-        newMsgBox = {
+        newMsgBoxBackUp.push ({
                 Title: "Hapus "+ deleteWhat +"?",
                 Message: "Apakah kamu yakin untuk hapus " + deleteWhat + "?",
                 NotificationType: 'warning',
-                ButtonType: ExclusiveButtonType,
+                ButtonType: 'yesno',
                 Action: (async (result: any) => {
-                    await invalidateAll();
-                    if(result){
+                    if(result && !deleting){
                         if(result === 'yes' && !deleting){
                             deleting = true;
-                            ExclusiveButtonType = undefined!;
                             const formData = new FormData();
                             formData.append(deleteWhat+'Name', edit[0]);
                             try{
@@ -201,37 +208,40 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                                     body: formData
                                 });
                                 if(!response.ok){
-                                    newMsgBox = {
+                                    newMsgBoxBackUp.push({
                                         Title: "Error Fetch Data",
                                         Message: "Cannot get the data, something went wrong",
                                         ButtonType: 'ok',
                                         NotificationType: 'danger',
                                         Action: () => {
-                                            newMsgBox = undefined!
+                                            deleteArray(newMsgBoxBackUp, "Error Fetch Data");
                                         }
-                                    };
+                                    });
+                                    deleteArray(newMsgBoxBackUp, "Hapus "+ deleteWhat +"?");
                                     return;
                                 }
                                 await invalidateAll();
                                 refreshData();
                                 deleting = false;
-                            }catch (error) {console.log(error);}
+                                newMsgBoxBackUp.push({
+                                    Title: "Berhasil",
+                                    Message: "Berhasil hapus " + deleteWhat,
+                                    NotificationType: 'info',
+                                    ButtonType: 'ok',
+                                    Action: async () => {
+                                        await invalidateAll();
+                                        refreshData();
+                                        deleteArray(newMsgBoxBackUp, "Berhasil");
+                                    }
+                                })
+                            }catch (error) {
+                                console.log(error);
+                            }
                         }
                     }
-                    newMsgBox = undefined!
+                    deleteArray(newMsgBoxBackUp, "Hapus "+ deleteWhat +"?");
                 })
-            }
-        if(!form?.error){
-            newMsgBox = {
-                Title: "Berhasil",
-                Message: "Berhasil hapus " + deleteWhat,
-                NotificationType: 'info',
-                ButtonType: 'ok',
-                Action: () => {
-                    
-                }
-            }
-        }
+            });
     }
     let addAccount: boolean = $state(false);
     let forAccount: number = $state(0);
@@ -261,6 +271,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
     }
 
     let newMsgBox: MsgBox = $state(undefined!);
+    const newMsgBoxBackUp: Array<MsgBox> = $state([]);
     let submiting: boolean = $state(false);
     // IN HERE WE FETCH DATA FROM BACKEND OR SEND IT
     let { data, form }: PageProps = $props();
@@ -339,7 +350,8 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                             emptiedArray(edit);
                             edit.push(data.nameAgent);
                             edit.push(data.id);
-                            hapusUnitMsgBox('unit');
+                            pengaturanClick2();
+                            hapusUnitMsgBox('agent');
                         })
                     });
                 });
@@ -622,8 +634,20 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
     </MessageBox>
 {/if}
 
+{#if newMsgBoxBackUp.length > 0}
+    {#each newMsgBoxBackUp as msgBox}
+        <MessageBox title={msgBox?.Title} type={msgBox.NotificationType} buttonType={msgBox.ButtonType} handleResult={msgBox.Action}>
+            <div class="w-full h-fit flex flex-col justify-between items-center object-center text-center">
+                <p class=" text-amber-300">{msgBox?.Message}</p>
+            </div>
+        </MessageBox>
+    {/each}
+{/if}
+
 <!-- <svelte:window onbeforeunload={beforeUnload} /> -->
 <!-- HERE THE MSG BOX FOR ERROR, LOGOUT, DELETE CONFIRMATION -->
+
+
 
 {#if (form?.error && getData) || (data?.error && getData)}
     <MessageBox title="Masalah Terjadi!" type="warning" buttonType="ok" handleResult={

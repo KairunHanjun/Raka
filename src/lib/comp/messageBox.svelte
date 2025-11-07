@@ -58,7 +58,7 @@
 
 <!-- Kontainer utama kartu notifikasi -->
 <div class="fixed top-0 left-0 w-screen h-screen flex 
-                items-center justify-center">
+                items-center justify-center z-255">
   <div class="">
     <div class="bg-slate-800 w-full max-w-sm rounded-3xl shadow-2xl border border-slate-700 overflow-hidden">
       
