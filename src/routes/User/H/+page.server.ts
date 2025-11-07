@@ -32,12 +32,14 @@ export const load: PageServerLoad = async ({ locals }) => {
 			desc: masalah.desc,
 			imageUrl: masalah.imageUrl,
 			when: masalah.when,
+			berat: masalah.berat,
+			done: masalah.done
 		})
 		.from(masalah)
 		.leftJoin(units, eq(masalah.unitId, units.id))
 		.innerJoin(accounts, eq(units.createdByWho, accounts.username))
 		.where(eq(accounts.createdByWho, locals.user.username));
-		//console.log(dataMasalah);
+		console.log(dataMasalah);
 		//Get Absensi
 		const dataAbsensi = await db
 		.select({
@@ -72,12 +74,13 @@ export const load: PageServerLoad = async ({ locals }) => {
 					hostName: customers.hostName,
 					price: customers.price,
 					duration: customers.duration,
-					agents: customers.agent,
+					agents: agents.nameAgent,
 					fromTime: customers.fromTime,
 					toTime: customers.toTime
 				})
 				.from(customers)
 				.innerJoin(accounts, eq(customers.hostName, accounts.username))
+				.innerJoin(agents, eq(agents.id, customers.agent))
 				.where(eq(accounts.createdByWho, locals.user.createdByWho));
 		return {
 			dataAkun,

@@ -13,12 +13,8 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
 	import { onMount } from "svelte";
 	import type { PageProps } from "./$types";
 	import { browser } from "$app/environment";
-
-    let deleteFormData: Array<{
-        action: string;
-        input: Array<{name: string; value: string}>;
-        enhanceAction: (() => void);
-    }> = $state(undefined!)
+    import ExcelJS from 'exceljs';
+	import saveAs from "file-saver";
 
   type UnitItem = {
     id: number | string | any;
@@ -145,13 +141,6 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
     const pengaturanAturan: Array<boolean> = $state([true, false]);
     const pengaturanAturan2: Array<boolean> = $state([true, false]);
     
-    interface ServerResponseFetch {
-        data?: any;
-        success?: boolean;
-        message?: string;
-        error?: string;
-    }
-    
     interface MsgBox {
         Title?: string;
         Message?: string;
@@ -159,8 +148,6 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
         ButtonType?: 'ok' | 'yesno' | 'subcancel';
         Action?: (() => {}) | (() => void) | ((result: any) => void);
     }
-
-    let serverResponseFetch: ServerResponseFetch = $state(undefined!);
 
 
     /**
@@ -214,16 +201,17 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                                     body: formData
                                 });
                                 if(!response.ok){
-                                    serverResponseFetch = {
-                                        data: undefined!,
-                                        success: false,
-                                        message: "Cannot get the data, something went wrong",
-                                        error: "Fetch data from server"
+                                    newMsgBox = {
+                                        Title: "Error Fetch Data",
+                                        Message: "Cannot get the data, something went wrong",
+                                        ButtonType: 'ok',
+                                        NotificationType: 'danger',
+                                        Action: () => {
+                                            newMsgBox = undefined!
+                                        }
                                     };
-                                    newMsgBox = undefined!
                                     return;
                                 }
-                                const result = await response.json();
                                 await invalidateAll();
                                 refreshData();
                                 deleting = false;
@@ -259,7 +247,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
     let lihatAbsensi: boolean = $state(false);
     let lihatAbsensi2: boolean = $state(false);
     let bindThisButton: HTMLButtonElement | undefined = $state(undefined);
-    
+
     function pengaturanClick2(){
         pengaturanAturan2[0] = !pengaturanAturan2[0];
         pengaturanAturan2[1] = !pengaturanAturan2[1];
@@ -407,19 +395,213 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
         }
     });
 
-    const combined = data?.dataCustomers?.map((cust, i) => {
-		const agent = data.dataAgents.find(a => a.id === cust.agents);
+    let selectedYear = $state(new Date().getFullYear());
+	let selectedMonth = $state(new Date().getMonth()); // 0–11
 
-		return {
-			no: i + 1,
-			customerName: cust.customersName,
-			agentName: cust.agents,
-			hostName: cust.hostName,
-			duration: cust.duration || "3 Jam",
-			price: `Rp. ${cust.price?.toLocaleString("id-ID") || "0"}`,
-			time: `${cust.fromTime}–${cust.toTime}`
-		};
-	});
+	// Map month names to number
+	const monthMap = {
+		January: 0, February: 1, March: 2, April: 3,
+		May: 4, June: 5, July: 6, August: 7,
+		September: 8, October: 9, November: 10, December: 11
+	};
+
+	function getMonthFromDate(dateStr: string | number | Date) {
+		return new Date(dateStr).getMonth();
+	}
+	function getYearFromDate(dateStr: string | number | Date) {
+		return new Date(dateStr).getFullYear();
+	}
+    function toExcelLocalTime(dateStr: string) {
+        if (!dateStr) return null;
+        const date = new Date(dateStr);
+        // Subtract timezone offset so Excel shows correct local time
+        date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+        return date;
+    }
+
+	// Filter customers
+    const combined = $derived(
+		data?.dataCustomers?.filter(c =>
+			getYearFromDate(c.fromTime) === selectedYear &&
+			getMonthFromDate(c.fromTime) === selectedMonth
+		).map((cust, i) => {
+			return {
+                no: i + 1,
+                customerName: cust.customersName,
+                hostName: cust.hostName,
+                duration: cust.duration || "3 Jam",
+                price: cust.price || "0",
+                fromTime: `${cust.fromTime}`,
+                toTime: `${cust.toTime}`,
+                agent: cust.agents
+            };
+		})
+	);
+
+    async function exportToExcel() {
+        console.log(combined);
+		const workbook = new ExcelJS.Workbook();
+		const sheet = workbook.addWorksheet('Customers');
+
+		// Header
+		sheet.columns = [
+			{ header: 'No', key: 'No', width: 5 },
+			{ header: 'Host', key: 'Host', width: 20 },
+			{ header: 'Nama Kostumer', key: 'Nama_Kostumer', width: 25 },
+			{ header: 'Agent', key: 'Agent', width: 20 },
+			{ header: 'Durasi', key: 'Durasi', width: 15 },
+			{ header: 'Harga', key: 'Harga', width: 20 },
+			{ header: 'Masuk', key: 'Masuk', width: 15 },
+			{ header: 'Keluar', key: 'Keluar', width: 15 }
+		];
+
+
+		// Add rows
+		for (const item of combined ?? []) {
+			const row = sheet.addRow({
+				No: item.no,
+				Host: item.hostName ?? '',
+				Nama_Kostumer: item.customerName ?? '',
+				Agent: item.agent ?? '',
+				Durasi: item.duration ? Number(item.duration) : null,
+				Harga: item.price ? Number(item.price) : null,
+				Masuk: item.fromTime ? toExcelLocalTime(item.fromTime) : null,
+				Keluar: item.toTime ? toExcelLocalTime(item.toTime) : null
+			});
+
+			// Format numbers
+			if (row.getCell('price').value) {
+				row.getCell('price').numFmt = '#,##0.00';
+			}
+
+			// Format duration as number (no decimal)
+			if (row.getCell('duration').value) {
+				row.getCell('duration').numFmt = '0';
+			}
+
+			// Format date cells
+			for (const key of ['fromTime', 'toTime']) {
+				const cell = row.getCell(key);
+				if (cell.value instanceof Date) {
+					cell.numFmt = 'yyyy-mm-dd hh:mm';
+				}
+			}
+		}
+
+		// Auto-fit column width
+		sheet.columns.forEach((col) => {
+			if(col !== undefined && col.header !== undefined && col.key !== undefined){
+                col.width = Math.max(
+                    col.header.length + 2,
+                    ...sheet.getColumn(col.key).values.map((v) => (v ? v.toString().length : 0))
+                );
+            }
+		});
+
+		// Optional styling
+		sheet.getRow(1).font = { bold: true };
+		sheet.getRow(1).alignment = { horizontal: 'center' };
+
+		// Save file
+		const buffer = await workbook.xlsx.writeBuffer();
+		saveAs(new Blob([buffer]), `data_units(${(selectedMonth < 10) ? "0" + selectedMonth.toString() : selectedMonth}-${selectedYear}).xlsx`);
+	}
+
+    let filteredMasalah = $derived(
+		(data?.dataMasalah ?? []).filter((item) => {
+				const date = item.when;
+				return (
+					getYearFromDate(date) === Number(selectedYear) &&
+					getMonthFromDate(date) === Number(selectedMonth)
+				);
+			}).map((item) => {
+				const unit = data?.dataUnits?.find((u) => u.id === item.unitId);
+				return {
+					...item,
+					unitName: unit ? unit.nameUnit : 'Unknown Unit'
+				};
+			})
+	);
+
+    async function exportExcel() {
+		const workbook = new ExcelJS.Workbook();
+		const sheet = workbook.addWorksheet('Masalah');
+
+		sheet.columns = [
+			{ header: 'No', key: 'No', width: 5 },
+			{ header: 'Nama Unit', key: 'Nama_Unit', width: 20 },
+			{ header: 'Penjelasan', key: 'Penjelasan', width: 40 },
+			{ header: 'Masalah Berat?', key: 'Masalah_Berat', width: 10 },
+			{ header: 'Selesai Diperbaiki?', key: 'Selesai_Diperbaiki', width: 10 },
+			{ header: 'Kapan', key: 'Kapan', width: 20 },
+		];
+
+		filteredMasalah.forEach((item, i) => {
+			sheet.addRow({
+				No: i + 1,
+				Nama_Unit: item.unitName,
+				Penjelasan: item.desc,
+				Masalah_Berat: item.berat ? 'Yes' : 'No',
+				Selesai_Diperbaiki: item.done ? 'Yes' : 'No',
+				Kapan: toExcelLocalTime(item.when.toLocaleString())
+			});
+		});
+
+		sheet.eachRow((row, rowNumber) => {
+			if (rowNumber === 1) return;
+			row.getCell('when').numFmt = 'dd-mmm-yyyy hh:mm';
+		});
+
+		const buffer = await workbook.xlsx.writeBuffer();
+		saveAs(new Blob([buffer]), `data_masalah(${(selectedMonth < 10) ? "0" + selectedMonth.toString() : selectedMonth}-${selectedYear}).xlsx`);
+	}
+
+    let filteredAbsensi = $derived(
+		(data?.dataAbsensi ?? []).filter((item) => {
+				const date = item.when;
+				return (
+					getYearFromDate(date) === Number(selectedYear) &&
+					getMonthFromDate(date) === Number(selectedMonth)
+				);
+			}).map((item) => {
+				return {
+					...item
+				};
+			})
+	);
+
+    async function eExcel() {
+		const workbook = new ExcelJS.Workbook();
+		const sheet = workbook.addWorksheet('Absensi');
+
+		sheet.columns = [
+			{ header: 'No', key: 'no', width: 5 },
+			{ header: 'Nama', key: 'name', width: 20 },
+			{ header: 'Jabatan', key: 'accountType', width: 15 },
+			{ header: 'Kapan Masuk', key: 'whenEntry', width: 25 },
+			{ header: 'Link Gambar', key: 'fotoUrl', width: 40 },
+		];
+
+		filteredAbsensi.forEach((item, i) => {
+			sheet.addRow({
+				no: i + 1,
+				name: item.name,
+				accountType: accountTypeMap[item.accountType] || 'Tidak Dikenali',
+				whenEntry: toExcelLocalTime(item.when.toString()),
+				fotoUrl: `https://res.cloudinary.com/du0gb4nqq/image/upload/v1762169111/${item.fotoUrl}.jpg`
+			});
+		});
+
+		// Format column types
+		sheet.eachRow((row, i) => {
+			if (i === 1) return; // skip header
+			const cell = row.getCell('whenEntry');
+			cell.numFmt = 'dd-mmm-yyyy hh:mm';
+		});
+
+		const buffer = await workbook.xlsx.writeBuffer();
+        saveAs(new Blob([buffer]), `data_absensi(${(selectedMonth < 10) ? "0" + selectedMonth.toString() : selectedMonth}-${selectedYear}).xlsx`);
+    }
 
     refreshData();
 </script>
@@ -476,11 +658,14 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                             body: formData
                         });
                         if(!response.ok){
-                            serverResponseFetch = {
-                                data: undefined!,
-                                success: false,
-                                message: "Cannot get the data, something went wrong",
-                                error: "Fetch data from server"
+                            newMsgBox = {
+                                Title: "Error Fetch Data",
+                                Message: "Cannot get the data, something went wrong",
+                                ButtonType: 'ok',
+                                NotificationType: 'danger',
+                                Action: () => {
+                                    newMsgBox = undefined!
+                                }
                             };
                             editData = false;
                             return;
@@ -675,35 +860,95 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
         </div>
     {:else if subMenu.laporan >= 1 && subMenu.pengaturan === 0}
         <ListingComp disableAddButton={true} editable={false} items={laporanItems} ifItems={true} ifOther={false} title={subMenu.titleSubMenu} itemEdit={itemEdit} selectedItemsID={subMenu.currentItemEditID}>
-            <section>
-                <div class="w-full h-full flex flex-col justify-between items-center bg-amber-100">
+            <section class="flex flex-col justify-between items-center">
+                <div class="w-full h-full flex flex-col justify-between items-center bg-amber-100 gap-2">
                     <div class="w-full h-fit flex justify-between items-center">
                         <div class="w-fit h-fit flex flex-col">
                             <p>Tahun :</p>
-                            <input type="number" min="1900" max="2999" step="1" value="2025" />
+                            <input
+                                type="number"
+                                min="1900"
+                                max="2999"
+                                step="1"
+                                bind:value={selectedYear}
+                            />
                         </div>
                         <div class="w-fit h-fit flex flex-col">
-                            <p>Tahun :</p>
-                            <select name="month" id="month">
-                                <option value="">-- Select Month --</option>
-                                <option value="January">January</option>
-                                <option value="February">February</option>
-                                <option value="March">March</option>
-                                <option value="April">April</option>
-                                <option value="May">May</option>
-                                <option value="June">June</option>
-                                <option value="July">July</option>
-                                <option value="August">August</option>
-                                <option value="September">September</option>
-                                <option value="October">October</option>
-                                <option value="November">November</option>
-                                <option value="December">December</option>
+                            <p>Bulan :</p>
+                            <select bind:value={selectedMonth} onchange={() => {
+                                console.log(combined);
+                                console.log(filteredMasalah)
+                            }}>
+                                {#each Object.entries(monthMap) as [name, index]}
+                                    <option value={index}>{name}</option>
+                                {/each}
                             </select>
                         </div>
                     </div>
-                    <div class="w-full flex flex-col ">
+                    <div class="text-white flex flex-col justify-center items-center text-center flex-grow w-full h-fit bg-slate-900 rounded-2xl p-3 space-y-3 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-900">
+                        {#if subMenu.titleSubMenu === "Unit"}
+                            {#each combined as item}
+                                <div class="item">
+                                    <p>Host: {item.hostName}</p>
+                                    <p>Nama Kostumer: {item.customerName}</p>
+                                    <p>Agent: {item.agent}</p>
+                                    <p>Durasi: {item.duration}</p>
+                                    <p>Harga: Rp. {item.price.toLocaleString("id-ID")}</p>
+                                    <p>Masuk: {item.fromTime}</p>
+                                    <p>Keluar: {item.toTime}</p>
+
+                                </div>
+                            {/each}
+                            {#if combined?.length === 0}
+                                <p class="opacity-60">Tidak ada data di bulan ini.</p>
+                            {/if}
+                        {:else if subMenu.titleSubMenu === "Masalah"}
+                            {#each filteredMasalah as item}
+                                <div class="item">
+                                    <p>Host: {data?.userNow?.username}</p>
+                                    <p>Unit: {item.unitName}</p>
+                                    <p>Keterangan: {item.desc}</p>
+                                    <p>Kapan: {item.when.toLocaleDateString()} {item.when.toLocaleTimeString()}</p>
+                                </div>
+                            {/each}
+                            {#if filteredMasalah.length === 0}
+                                <p class="opacity-60">Tidak ada data di bulan ini.</p>
+                            {/if}
+                        {:else if subMenu.titleSubMenu === "Absensi"}
+                            {#each filteredAbsensi as item}
+                                <div class="flex flex-col justify-center items-center  justify-items-center-safe item">
+                                    <img width="96" height="96" class="object-fill" src={`https://res.cloudinary.com/du0gb4nqq/image/upload/v1762169111/${item.fotoUrl}.jpg`} alt="">
+                                    <p>Nama: {item.name}</p>
+                                    <p>Jabatan: {accountTypeMap[item.accountType]}</p>
+                                    <p>Kapan: {item.when.toLocaleDateString()} {item.when.toLocaleTimeString()}</p>
+                                </div>
+                            {/each}
+                            {#if filteredAbsensi.length === 0}
+                                <p class="opacity-60">Tidak ada data di bulan ini.</p>
+                            {/if}
+                        {/if}
+
                     </div>
                 </div>
+                {#if subMenu.titleSubMenu === "Unit"}
+                    <button
+                        class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 mt-3"
+                        onclick={async () => await exportToExcel()}>
+                        ⬇️ Export to Excel
+                    </button>
+                {:else if subMenu.titleSubMenu === "Masalah"}
+                    <button
+                        class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 mt-3"
+                        onclick={async () => await exportExcel()}>
+                        ⬇️ Export to Excel
+                    </button>
+                {:else if subMenu.titleSubMenu === "Absensi"}
+                    <button
+                        class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 mt-3"
+                        onclick={async () => await eExcel()}>
+                        ⬇️ Export to Excel
+                    </button>
+                {/if}
             </section>
         </ListingComp>
     <!-- HERE LAY THE ADD AND EDIT ACCOUNT -->

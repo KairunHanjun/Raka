@@ -35,7 +35,8 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', function(event){
    event.respondWith(async function () {
-      var cache = await caches.open('cache');
+      try{
+        var cache = await caches.open('cache');
       var cachedResponsePromise = await cache.match(event.request);
       var networkResponsePromise = fetch(event.request);
       event.waitUntil(async function () {
@@ -43,5 +44,13 @@ self.addEventListener('fetch', function(event){
          await cache.put(event.request, networkResponse.clone());
       }());
       return cachedResponsePromise || networkResponsePromise;
+      }catch(error){
+        const cachedResponse = await caches.match('/offline');
+        return cachedResponse || new Response('<h1>Offline</h1>', {
+            status: 503,
+            statusText: 'Service Unavailable',
+            headers: new Headers({'Content-Type': 'text/html'})
+          });
+      }
     }());
 });

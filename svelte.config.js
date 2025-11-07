@@ -1,5 +1,4 @@
 import adapter from '@sveltejs/adapter-auto';
-import { SvelteKitPWA } from '@vite-pwa/sveltekit';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
 /** @type {import('@sveltejs/kit').Config} */
@@ -14,32 +13,6 @@ const config = {
 		adapter: adapter({
             fallback: 'offline.html'
         })
-	},
-	vite:{
-		plugins: [
-                SvelteKitPWA({
-                    // PWA options like manifest, icons, workbox configuration
-                    // Example:
-                    manifest: {
-                    name: "RoomQu",
-                    short_name: "RQ",
-                    start_url: "/",
-                    display: "standalone",
-                    icons: [
-                        {
-                            src: "/icons/icon-192.png",
-                            sizes: "192x192",
-                            type: "image/png"
-                        },
-                        {
-                            src: "/icons/icon-512.png",
-                            sizes: "512x512",
-                            type: "image/png"
-                        }
-                    ]
-                    }
-                })
-            ]
 	}
 };
 
