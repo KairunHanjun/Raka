@@ -8,7 +8,7 @@
   	let error = null;
 	if ('serviceWorker' in navigator) {
 
-		const registration = navigator.serviceWorker.register('../service-worker.ts', {
+		const registration = navigator.serviceWorker.register('$lib/service-worker.ts', {
 			type: (dev ? 'module' : 'classic')
 		})
 		.then((event) => {
