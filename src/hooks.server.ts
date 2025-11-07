@@ -26,7 +26,7 @@ const authMiddleware: Handle = async ({event, resolve}) => {
 	event.locals.session = session;
 	// Path and route control
 	const pathname = event.url.pathname;
-	const publicRoutes = ['/','/offline'];
+	const publicRoutes = ['/','/offline','/service-worker.ts'];
 	const isPublic = publicRoutes.some((r) => pathname === r);
 
 	// Define each accountType’s dashboard

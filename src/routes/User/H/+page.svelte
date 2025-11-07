@@ -281,6 +281,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
     let masalahLihat: boolean = $state(false);
     let isOnline: boolean = $state(true);
     function refreshData() {
+        emptiedArray(rooms);
         emptiedArray(userItems);
         emptiedArray(unitItems);
         emptiedArray(agentItems);
@@ -405,6 +406,22 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
             };
         }
     });
+
+    const combined = data?.dataCustomers?.map((cust, i) => {
+		const agent = data.dataAgents.find(a => a.id === cust.agents);
+		const host = data.dataAkun.find(acc => acc.username === unit?.createdByWho);
+
+		return {
+			no: i + 1,
+			customerName: cust.name,
+			unitName: unit?.nameUnit,
+			agentName: agent?.nameAgent,
+			hostName: host?.username,
+			duration: cust.duration || "3 Jam",
+			price: `Rp. ${cust.price?.toLocaleString("id-ID") || "0"}`,
+			time: `${cust.startTime}–${cust.endTime}`
+		};
+	});
 
     refreshData();
 </script>

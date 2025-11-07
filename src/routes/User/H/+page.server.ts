@@ -65,6 +65,18 @@ export const load: PageServerLoad = async ({ locals }) => {
         .where(and(eq(accounts.createdByWho, units.createdByWho)));
 		const userNow = locals.user;
 		
+		const dataCustomers = await db
+				.select({
+					id: customers.idCostumers,
+					customersName: customers.customersName,
+					hostName: customers.hostName,
+					price: customers.price,
+					duration: customers.duration,
+					agents: customers.agent,
+				})
+				.from(customers)
+				.innerJoin(accounts, eq(customers.hostName, accounts.username))
+				.where(eq(accounts.createdByWho, locals.user.createdByWho));
 		return {
 			dataAkun,
 			dataUnits,
@@ -72,6 +84,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 			dataKebersihan,
 			dataAbsensi,
 			dataMasalah,
+			dataCustomers,
 			userNow
 		}
 	} catch (error) {
