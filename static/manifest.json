@@ -1,6 +1,6 @@
 {
   "name": "RoomQu",
-  "short_name": "RQ",
+  "short_name": "RoomQu",
   "start_url": "https://app-raka.vercel.app/",
   "display": "standalone",
   "background_color": "#141517",
