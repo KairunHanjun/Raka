@@ -8,7 +8,6 @@ import { db } from "$lib/server/db";
 import { absensi, accounts, agents, customers, kebersihan, masalah, units } from "$lib/server/db/schema";
 import { eq, ne, and } from "drizzle-orm/sql/expressions/conditions";
 import { asc, desc } from "drizzle-orm";
-import { deleteSessionTokenCookie, invalidateSession, sessionCookieName } from "$lib/server/auth";
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.user || locals.user.accountType !== 'H') {
@@ -38,8 +37,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 		.from(masalah)
 		.leftJoin(units, eq(masalah.unitId, units.id))
 		.innerJoin(accounts, eq(units.createdByWho, accounts.username))
-		.where(eq(accounts.createdByWho, locals.user.username));
-		console.log(dataMasalah);
+		.where(eq(accounts.createdByWho, locals.user.createdByWho));
+		//console.log(dataMasalah);
 		//Get Absensi
 		const dataAbsensi = await db
 		.select({
@@ -76,7 +75,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 					duration: customers.duration,
 					agents: agents.nameAgent,
 					fromTime: customers.fromTime,
-					toTime: customers.toTime
+					toTime: customers.toTime,
+					commision: customers.komisi
 				})
 				.from(customers)
 				.innerJoin(accounts, eq(customers.hostName, accounts.username))
@@ -127,8 +127,8 @@ export const actions: Actions = {
 					kebersihan: null,
 					pending: false,
 					unitState: 'Working',
-					fromTime: customers_get[0].fromTime,
-					toTime: customers_get[0].toTime,
+					fromTime: new Date(customers_get[0].fromTime),
+                    toTime: new Date(customers_get[0].toTime),
 				}).where(eq(units.id, unitId));
 				await db.delete(kebersihan).where(eq(kebersihan.id, kebersihanId));
 			}else{
@@ -191,8 +191,8 @@ export const actions: Actions = {
 			await db.insert(units).values({
 				nameUnit: UnitName as string,
 				unitState: Status as any,
-				fromTime: (FromTime) ? (FromTime as string) : null,
-				toTime: (ToTime) ? (ToTime as string) : null,
+				fromTime: (FromTime) ? new Date(FromTime) : null,
+				toTime: (ToTime) ? new Date(ToTime) : null,
 				createdByWho: event.locals.user?.username
 			});
 		} catch (error) {
@@ -283,8 +283,8 @@ export const actions: Actions = {
 			await db.update(units).set({
 				nameUnit: UnitName as string,
 				unitState: Status as any,
-				fromTime: (FromTime) ? (FromTime as string) : null,
-				toTime: (ToTime) ? (ToTime as string) : null
+				fromTime: (FromTime) ? new Date(FromTime) : null,
+				toTime: (ToTime) ? new Date(ToTime) : null
 			}).where(eq(units.nameUnit, (UnitName as string)));
 		} catch (error) {
 			return fail(422, {

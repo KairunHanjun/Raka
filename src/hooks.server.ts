@@ -2,8 +2,33 @@ import type { Handle } from '@sveltejs/kit';
 import * as auth from '$lib/server/auth';
 import { sequence } from '@sveltejs/kit/hooks';
 import { db } from '$lib/server/db';
-import { session } from '$lib/server/db/schema';
-import { lt } from 'drizzle-orm';
+import { session, units } from '$lib/server/db/schema';
+import { lt, eq, sql } from 'drizzle-orm';
+
+let initialized = false;	
+
+export const checkUnitsMiddleware: Handle = async ({ event, resolve }) => {
+	if (!initialized) {
+		initialized = true;
+		setInterval(async () => {
+			try{
+				const expiredUnits = await db.select()
+				.from(units)
+				.where(lt(units.toTime, sql`CURRENT_TIME`));
+
+			for (const u of expiredUnits) {
+				await db.update(units)
+					.set({ unitState: 'StandBy' })
+					.where(eq(units.id, u.id));
+			}
+			}catch(error){
+
+			}
+		}, 60_000); // check every minute
+	}
+
+	return resolve(event);
+};
 
 const authMiddleware: Handle = async ({event, resolve}) => {
 	
@@ -37,7 +62,6 @@ const authMiddleware: Handle = async ({event, resolve}) => {
 		H: '/User/H'
 	} as const;
 
-	
 	// 🧭 1. Not logged in trying to access protected route → send to landing
 	if (!user && !isPublic) {
 		console.log("Check User 1");
@@ -74,4 +98,4 @@ const checkOutdatedSession: Handle = async ({event, resolve}) => {
 	return await resolve(event);
 }
 
-export const handle: Handle = sequence(authMiddleware, checkOutdatedSession);
+export const handle: Handle = sequence(authMiddleware, checkOutdatedSession, checkUnitsMiddleware);

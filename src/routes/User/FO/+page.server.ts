@@ -13,6 +13,15 @@ function toAccountType(value: string): AccountType | undefined {
   return accountTypes.find(c => c === value);
 }
 
+function formatDateLocal(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0'); // fix month +1
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day} ${hours}:${minutes}:00`;
+}
+
 export const load: PageServerLoad = async ({ locals }) => {
     if (!locals.user || locals.user.accountType !== 'FO') {
 		throw redirect(302, '/');
@@ -29,6 +38,8 @@ export const load: PageServerLoad = async ({ locals }) => {
             unitId: customers.unitId,
             price: customers.price,
             duration: customers.duration,
+            fromTime: customers.fromTime,
+            toTime: customers.toTime
         })
         .from(customers)
         .innerJoin(accounts, eq(customers.hostName, accounts.username))
@@ -82,8 +93,8 @@ export const actions: Actions = {
                         kebersihan: null,
                         pending: false,
                         unitState: 'Working',
-                        fromTime: customers_get[0].fromTime,
-                        toTime: customers_get[0].toTime,
+                        fromTime: new Date(customers_get[0].fromTime),
+                        toTime: new Date(customers_get[0].toTime),
                     }).where(eq(units.id, unitId));
                     await db.delete(kebersihan).where(eq(kebersihan.id, kebersihanId));
                 }else{
@@ -120,6 +131,7 @@ export const actions: Actions = {
         const toTime: string = (formData.get("out")?.toString() ?? '');
         const [agent_id, agent_host]: string[] = (formData.get("agent")?.toString() ?? '|').split("|");
         const price: number = +(formData.get("price")?.toString() ?? '0');
+        const komisi: number = +(formData.get("komisi")?.toString() ?? '0');
         const fotoKtp: File = (formData.get("ktp") as File);
         const unit_id: string = (formData.get("unit_id")?.toString() ?? '');
         
@@ -135,19 +147,14 @@ export const actions: Actions = {
             }
             //CHECK IF UPLOAD IS DONE OR ERROR
             else{
-                await db.update(units).set({
-                    unitState: 'StandBy',
-                    pending: null
-                }).where(eq(units.id, unit_id))
                 //Check if custom duration
-                let fromDate: Date = new Date();
-                let toDate: Date = new Date();
+                
                 const [fromHour, fromMin] = formTime.split(":").map(Number);
                 const [toHour, toMin] = toTime.split(":").map(Number);
                 const today = new Date();
-                fromDate = new Date(today);
+                let fromDate = new Date(today);
                 fromDate.setHours(fromHour, fromMin, 0, 0);
-                toDate = new Date(today);
+                let toDate = new Date(today);
                 toDate.setHours(toHour, toMin, 0, 0);
                 if (toDate < fromDate) toDate.setDate(toDate.getDate() + 1);
                 if(duration == 0) {
@@ -160,18 +167,26 @@ export const actions: Actions = {
                     duration = diffMs / (1000 * 60 * 60 * 24);
                     durationDays = true;
                 }
+
                 await db.insert(customers).values({
                     hostName: agent_host,
                     agent: agent_id,
                     unitId: unit_id,
                     customersName: customerName,
                     duration: duration,
-                    fromTime: `${fromDate.getFullYear()}-${fromDate.getMonth()}-${(fromDate.getDate()< 10) ? '0' + fromDate.getDate() : fromDate.getDate()} ${fromDate.getHours()}:${fromDate.getMinutes()}:00`,
-                    toTime: `${toDate.getFullYear()}-${toDate.getMonth()}-${(toDate.getDate() < 10) ? '0' + toDate.getDate() : toDate.getDate()} ${toDate.getHours()}:${toDate.getMinutes()}:00`,
+                    fromTime: formatDateLocal(fromDate),
+                    toTime: formatDateLocal(toDate),
                     price: price,
                     fotoKTP: result_upload.public_id,
-                    durationDays: durationDays
+                    durationDays: durationDays,
+                    komisi: komisi
                 });
+                await db.update(units).set({
+                    unitState: 'Working',
+                    fromTime: fromDate,
+                    toTime: toDate,
+                    pending: null
+                }).where(eq(units.id, unit_id))
             }
         } catch (error) {
             console.log(error);
@@ -194,6 +209,7 @@ export const actions: Actions = {
         const formData: FormData = await event.request.formData();
         const unit_id: string = (formData.get("unit_id")?.toString() ?? '');
         const changeStateToReady: boolean = (formData.get('readyState') as unknown as boolean ?? false)
+        const price: number = +(formData.get("price")?.toString() ?? '0');
         let duration: number | undefined = +(formData.get("duration")?.toString() ?? '-1');
         try {
             if(!changeStateToReady){
@@ -223,12 +239,37 @@ export const actions: Actions = {
                     durationDays = true;
                 }
 
-                await db.update(customers).set({
-                    fromTime: `${fromDate.getFullYear()}-${fromDate.getMonth()}-${(fromDate.getDate()< 10) ? '0' + fromDate.getDate() : fromDate.getDate()} ${fromDate.getHours()}:${fromDate.getMinutes()}:00`,
-                    toTime: `${toDate.getFullYear()}-${toDate.getMonth()}-${(toDate.getDate()< 10) ? '0' + toDate.getDate() : toDate.getDate()} ${toDate.getHours()}:${toDate.getMinutes()}:00`,
-                    duration: duration,
-                    durationDays: durationDays
-                }).where(eq(customers.unitId, unit_id));
+                const current = await db
+                    .select({
+                        oldToTime: customers.toTime,
+                        oldDuration: customers.duration,
+                        price: customers.price
+                    })
+                    .from(customers)
+                    .where(eq(customers.unitId, unit_id))
+                    .limit(1);
+
+                if (current.length > 0) {
+                    const prevTo = new Date(current[0].oldToTime as string);
+                    const prevDuration = current[0].oldDuration ?? 0;
+                    const priceY = current[0].price;
+
+                    const newTotalDuration = prevDuration + duration!;
+                    const newToTime = new Date(prevTo);
+
+                    if (durationDays) {
+                        newToTime.setDate(newToTime.getDate() + duration!);
+                    } else {
+                        newToTime.setHours(newToTime.getHours() + duration!);
+                    }
+
+                    await db.update(customers).set({
+                        toTime: `${newToTime.getFullYear()}-${newToTime.getMonth()+1}-${(newToTime.getDate()<10?'0':'')+newToTime.getDate()} ${newToTime.getHours()}:${newToTime.getMinutes()}:00`,
+                        duration: newTotalDuration,
+                        durationDays,
+                        price: priceY+price,
+                    }).where(eq(customers.unitId, unit_id));
+                }
             }else{
                 const getPublic_ID = (await db.select().from(customers).where(eq(customers.unitId, unit_id)))[0].fotoKTP ?? '';
                 //If you want to delete it
@@ -261,7 +302,7 @@ export const actions: Actions = {
 		}
     },
     absen: async (event) => {
-        console.log("Apa yang terjadi dengan dirimu");
+        //console.log("Apa yang terjadi dengan dirimu");
         const formData: FormData = await event.request.formData();
         const nama: string = formData.get('name')?.toString() ?? '';
         const jabatan: "FO" | "HK" | "T" | "H"  = toAccountType(formData.get("accountType")?.toString() ?? '') ?? 'FO';
@@ -342,17 +383,18 @@ export const actions: Actions = {
                     await db.update(units).set({
                         unitState: 'Closed'
                     }).where(eq(units.id, unitId))
-                    const getPublic_ID = (await db.select().from(customers).where(eq(customers.unitId, unitId)))[0].fotoKTP ?? '';
+                    const getPublic_ID = (await db.select().from(customers).where(eq(customers.unitId, unitId))) ?? false;
                     //If you want to delete it
                     // await db.delete(customers).where(eq(customers.unitId, unit_id));
                     //if you want to keep it, (update the picture id to null please or just empty string)
-                    await db.update(customers).set({
-                        fotoKTP: null,
-                        unitId: null
-                    }).where(eq(customers.fotoKTP, getPublic_ID));
-                    await db.update(units).set({ unitState: 'Ready' }).where(eq(units.id, unitId));
-                    console.log(getPublic_ID);
-                    await DELETE(getPublic_ID);
+                    if(getPublic_ID.length > 0){
+                        await db.update(customers).set({
+                            fotoKTP: null,
+                            unitId: null
+                        }).where(eq(customers.fotoKTP, getPublic_ID[0].fotoKTP ?? ''));
+                        await db.update(units).set({ unitState: 'Ready' }).where(eq(units.id, unitId));
+                        await DELETE(getPublic_ID[0].fotoKTP ?? '');
+                    }
                 }
                 
             }

@@ -279,6 +279,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
     let editData: any = $state(false);
     let masalahLihat: boolean = $state(false);
     let isOnline: boolean = $state(true);
+    let dosument: Document | undefined = $state(undefined);
     function refreshData() {
         emptiedArray(rooms);
         emptiedArray(userItems);
@@ -311,7 +312,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                     unitItems.push({
                         id: data.id,
                         name: data.nameUnit.toLocaleUpperCase(),
-                        name2: (data.fromTime && data.toTime) ? data.fromTime + " - " + data.toTime : null,
+                        name2:  ((data.fromTime && data.toTime) ? `${(data.fromTime.getHours() < 10) ? ("0"+data.fromTime.getHours().toString()) : data.fromTime.getHours().toString()}:${(data.fromTime.getMinutes() < 10) ? "0"+data.fromTime.getMinutes().toString() : data.fromTime.getMinutes()}` + " - " + `${(data.toTime.getHours() < 10) ? "0"+data.toTime.getHours().toString() : data.toTime.getHours()}:${(data.toTime.getMinutes() < 10) ? "0"+data.toTime.getMinutes().toString() : data.toTime.getMinutes()}` : ''),
                         event: (() => {
                             pengaturanClick2();
                             emptiedArray(edit);
@@ -327,7 +328,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                     rooms.push({
                         id: data.id,
                         name: data.nameUnit,
-                        times: (data.fromTime && data.toTime) ? data.fromTime + " - " + data.toTime : '',
+                        times:  ((data.fromTime && data.toTime) ? `${(data.fromTime.getHours() < 10) ? ("0"+data.fromTime.getHours().toString()) : data.fromTime.getHours().toString()}:${(data.fromTime.getMinutes() < 10) ? "0"+data.fromTime.getMinutes().toString() : data.fromTime.getMinutes()}` + " - " + `${(data.toTime.getHours() < 10) ? "0"+data.toTime.getHours().toString() : data.toTime.getHours()}:${(data.toTime.getMinutes() < 10) ? "0"+data.toTime.getMinutes().toString() : data.toTime.getMinutes()}` : ''),
                         state: data.unitState ?? '',
                         pending: data.pending ?? false,
                         kebersihan: data.kebersihan
@@ -385,6 +386,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
 
     onMount(() => {
         if(browser){
+            dosument = document;
             let online = navigator.onLine;
             window.addEventListener('online', () => (online = true));
             window.addEventListener('offline', () => (online = false));
@@ -423,13 +425,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
 	function getYearFromDate(dateStr: string | number | Date) {
 		return new Date(dateStr).getFullYear();
 	}
-    function toExcelLocalTime(dateStr: string) {
-        if (!dateStr) return null;
-        const date = new Date(dateStr);
-        // Subtract timezone offset so Excel shows correct local time
-        date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
-        return date;
-    }
+    
 
 	// Filter customers
     const combined = $derived(
@@ -438,86 +434,10 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
 			getMonthFromDate(c.fromTime) === selectedMonth
 		).map((cust, i) => {
 			return {
-                no: i + 1,
-                customerName: cust.customersName,
-                hostName: cust.hostName,
-                duration: cust.duration || "3 Jam",
-                price: cust.price || "0",
-                fromTime: `${cust.fromTime}`,
-                toTime: `${cust.toTime}`,
-                agent: cust.agents
+                ...cust
             };
 		})
 	);
-
-    async function exportToExcel() {
-        console.log(combined);
-		const workbook = new ExcelJS.Workbook();
-		const sheet = workbook.addWorksheet('Customers');
-
-		// Header
-		sheet.columns = [
-			{ header: 'No', key: 'No', width: 5 },
-			{ header: 'Host', key: 'Host', width: 20 },
-			{ header: 'Nama Kostumer', key: 'Nama_Kostumer', width: 25 },
-			{ header: 'Agent', key: 'Agent', width: 20 },
-			{ header: 'Durasi', key: 'Durasi', width: 15 },
-			{ header: 'Harga', key: 'Harga', width: 20 },
-			{ header: 'Masuk', key: 'Masuk', width: 15 },
-			{ header: 'Keluar', key: 'Keluar', width: 15 }
-		];
-
-
-		// Add rows
-		for (const item of combined ?? []) {
-			const row = sheet.addRow({
-				No: item.no,
-				Host: item.hostName ?? '',
-				Nama_Kostumer: item.customerName ?? '',
-				Agent: item.agent ?? '',
-				Durasi: item.duration ? Number(item.duration) : null,
-				Harga: item.price ? Number(item.price) : null,
-				Masuk: item.fromTime ? toExcelLocalTime(item.fromTime) : null,
-				Keluar: item.toTime ? toExcelLocalTime(item.toTime) : null
-			});
-
-			// Format numbers
-			if (row.getCell('price').value) {
-				row.getCell('price').numFmt = '#,##0.00';
-			}
-
-			// Format duration as number (no decimal)
-			if (row.getCell('duration').value) {
-				row.getCell('duration').numFmt = '0';
-			}
-
-			// Format date cells
-			for (const key of ['fromTime', 'toTime']) {
-				const cell = row.getCell(key);
-				if (cell.value instanceof Date) {
-					cell.numFmt = 'yyyy-mm-dd hh:mm';
-				}
-			}
-		}
-
-		// Auto-fit column width
-		sheet.columns.forEach((col) => {
-			if(col !== undefined && col.header !== undefined && col.key !== undefined){
-                col.width = Math.max(
-                    col.header.length + 2,
-                    ...sheet.getColumn(col.key).values.map((v) => (v ? v.toString().length : 0))
-                );
-            }
-		});
-
-		// Optional styling
-		sheet.getRow(1).font = { bold: true };
-		sheet.getRow(1).alignment = { horizontal: 'center' };
-
-		// Save file
-		const buffer = await workbook.xlsx.writeBuffer();
-		saveAs(new Blob([buffer]), `data_units(${(selectedMonth < 10) ? "0" + selectedMonth.toString() : selectedMonth}-${selectedYear}).xlsx`);
-	}
 
     let filteredMasalah = $derived(
 		(data?.dataMasalah ?? []).filter((item) => {
@@ -535,39 +455,6 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
 			})
 	);
 
-    async function exportExcel() {
-		const workbook = new ExcelJS.Workbook();
-		const sheet = workbook.addWorksheet('Masalah');
-
-		sheet.columns = [
-			{ header: 'No', key: 'No', width: 5 },
-			{ header: 'Nama Unit', key: 'Nama_Unit', width: 20 },
-			{ header: 'Penjelasan', key: 'Penjelasan', width: 40 },
-			{ header: 'Masalah Berat?', key: 'Masalah_Berat', width: 10 },
-			{ header: 'Selesai Diperbaiki?', key: 'Selesai_Diperbaiki', width: 10 },
-			{ header: 'Kapan', key: 'Kapan', width: 20 },
-		];
-
-		filteredMasalah.forEach((item, i) => {
-			sheet.addRow({
-				No: i + 1,
-				Nama_Unit: item.unitName,
-				Penjelasan: item.desc,
-				Masalah_Berat: item.berat ? 'Yes' : 'No',
-				Selesai_Diperbaiki: item.done ? 'Yes' : 'No',
-				Kapan: toExcelLocalTime(item.when.toLocaleString())
-			});
-		});
-
-		sheet.eachRow((row, rowNumber) => {
-			if (rowNumber === 1) return;
-			row.getCell('when').numFmt = 'dd-mmm-yyyy hh:mm';
-		});
-
-		const buffer = await workbook.xlsx.writeBuffer();
-		saveAs(new Blob([buffer]), `data_masalah(${(selectedMonth < 10) ? "0" + selectedMonth.toString() : selectedMonth}-${selectedYear}).xlsx`);
-	}
-
     let filteredAbsensi = $derived(
 		(data?.dataAbsensi ?? []).filter((item) => {
 				const date = item.when;
@@ -582,37 +469,93 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
 			})
 	);
 
-    async function eExcel() {
-		const workbook = new ExcelJS.Workbook();
-		const sheet = workbook.addWorksheet('Absensi');
+    async function exportToExcel(fetchWhat: 'units_excel' | 'masalah_excel' | 'absensi_excel' | '') {
+        let filename = '';
+        let data: {
+            id: string;
+            name: string;
+            accountType: "FO" | "HK" | "T" | "H";
+            when: Date;
+            fotoUrl: string;
+        }[] | 
+        {
+            unitName: string;
+            id: string;
+            unitId: string | null;
+            desc: string;
+            imageUrl: string;
+            when: Date;
+            berat: boolean | null;
+            done: boolean | null;
+        }[] |
+        {
+            id: string;
+            customersName: string;
+            hostName: string;
+            price: number;
+            duration: number;
+            agents: string;
+            fromTime: string;
+            toTime: string;
+            commision: number;
+        }[] | undefined = undefined;
+        switch (fetchWhat) {
+            case 'units_excel':{
+                filename = `data_units(${(selectedMonth < 10) ? "0" + selectedMonth.toString() : selectedMonth}-${selectedYear}).xlsx`;
+                data = combined;
+                break;
+            }
+            case 'masalah_excel':{
+                filename = `data_masalah(${(selectedMonth < 10) ? "0" + selectedMonth.toString() : selectedMonth}-${selectedYear}).xlsx`
+                data = filteredMasalah;
+                break;
+            }
+            case 'absensi_excel':{
+                filename = `data_absensi(${(selectedMonth < 10) ? "0" + selectedMonth.toString() : selectedMonth}-${selectedYear}).xlsx`
+                data = filteredAbsensi;
+                break;
+            }
+            default:
+                return;
+        }
 
-		sheet.columns = [
-			{ header: 'No', key: 'no', width: 5 },
-			{ header: 'Nama', key: 'name', width: 20 },
-			{ header: 'Jabatan', key: 'accountType', width: 15 },
-			{ header: 'Kapan Masuk', key: 'whenEntry', width: 25 },
-			{ header: 'Link Gambar', key: 'fotoUrl', width: 40 },
-		];
+        try {
+            newMsgBoxBackUp.push({
+                Title: "Harap Tunggu",
+                Message: "Sedang mengexport kedalam excel",
+                NotificationType: 'info',
+                Action: () => {
+                }
+            })
+           const res = await fetch(`/api/${fetchWhat}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ data })
+            });
+ 
+            if (!res.ok) throw new Error('Failed to download');
 
-		filteredAbsensi.forEach((item, i) => {
-			sheet.addRow({
-				no: i + 1,
-				name: item.name,
-				accountType: accountTypeMap[item.accountType] || 'Tidak Dikenali',
-				whenEntry: toExcelLocalTime(item.when.toString()),
-				fotoUrl: `https://res.cloudinary.com/du0gb4nqq/image/upload/v1762169111/${item.fotoUrl}.jpg`
-			});
-		});
+            const blob = await res.blob();
+			const url = URL.createObjectURL(blob);
+			const a = dosument?.createElement('a') ?? new HTMLAnchorElement();
+			a.href = url;
+			a.download = filename;
+			a.click();
+			URL.revokeObjectURL(url);
 
-		// Format column types
-		sheet.eachRow((row, i) => {
-			if (i === 1) return; // skip header
-			const cell = row.getCell('whenEntry');
-			cell.numFmt = 'dd-mmm-yyyy hh:mm';
-		});
-
-		const buffer = await workbook.xlsx.writeBuffer();
-        saveAs(new Blob([buffer]), `data_absensi(${(selectedMonth < 10) ? "0" + selectedMonth.toString() : selectedMonth}-${selectedYear}).xlsx`);
+        } catch (error) {
+            console.error(error);
+            newMsgBoxBackUp.push({
+                Title: "Error Terjadi",
+                Message: "Terjadi kesalahan saat export data ke excel",
+                NotificationType: 'danger',
+                ButtonType: 'ok',
+                Action: () => {
+                    deleteArray(newMsgBoxBackUp, "Error Terjadi");
+                }
+            })
+        }   
+        deleteArray(newMsgBoxBackUp, "Harap Tunggu");
     }
 
     refreshData();
@@ -908,71 +851,256 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                                 {/each}
                             </select>
                         </div>
-                    </div>
-                    <div class="text-white flex flex-col justify-center items-center text-center flex-grow w-full h-fit bg-slate-900 rounded-2xl p-3 space-y-3 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-900">
+                    </div>                    
                         {#if subMenu.titleSubMenu === "Unit"}
                             {#each combined as item}
-                                <div class="item">
-                                    <p>Host: {item.hostName}</p>
-                                    <p>Nama Kostumer: {item.customerName}</p>
-                                    <p>Agent: {item.agent}</p>
-                                    <p>Durasi: {item.duration}</p>
-                                    <p>Harga: Rp. {item.price.toLocaleString("id-ID")}</p>
-                                    <p>Masuk: {item.fromTime}</p>
-                                    <p>Keluar: {item.toTime}</p>
-
+                                <div class="text-white flex flex-col justify-center items-center text-center flex-grow w-full h-fit bg-slate-900 rounded-2xl p-3 space-y-3 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-900">
+                                    <div class="item">
+                                        <p>Host: {item.hostName}</p>
+                                        <p>Nama Kostumer: {item.customersName}</p>
+                                        <p>Agent: {item.agents}</p>
+                                        <p>Durasi: {item.duration}</p>
+                                        <p>Harga: Rp. {item.price.toLocaleString("id-ID")}</p>
+                                        <p>Komisi: Rp. {item.commision.toLocaleString("id-ID")}</p>
+                                        <p>Masuk: {item.fromTime}</p>
+                                        <p>Keluar: {item.toTime}</p>
+                                    </div>
+                                    <button class="px-5 py-2.5 rounded-xl bg-red-600 text-white font-medium shadow-md hover:bg-red-700 active:scale-95 transition-all duration-200" onclick={async () => {
+                                        newMsgBoxBackUp.push({
+                                            Title: "Yakin?",
+                                            Message: "Yakin ingin menghapus ini?",
+                                            NotificationType: 'info',
+                                            ButtonType: 'yesno',
+                                            Action: async (result) => {
+                                                if(result === 'yes'){
+                                                    const formData: FormData = new FormData();
+                                                    formData.set('typeOfDelete', 'customers');
+                                                    formData.set('id', item.id);
+                                                    newMsgBoxBackUp.push({
+                                                        Title: "Harap Tunggu",
+                                                        Message: "Harap menunggu saat menghapus data",
+                                                        NotificationType: 'info',
+                                                        Action: () => {
+                                                            
+                                                        }
+                                                    })
+                                                    try {
+                                                        const response = await fetch('/api/hapus_data', {
+                                                            method: 'POST',
+                                                            body: formData,
+                                                        });
+                                                        let result = '';
+                                                        if (!response.ok){
+                                                            result = await response.text();
+		                                                    throw new Error(result || 'Error tidak diketahui, hubungi developer');
+                                                        }
+                                                        
+                                                        result = await response.text(); // Or response.text() depending on your API
+                                                        newMsgBoxBackUp.push({
+                                                            Title: "Berhasil",
+                                                            Message: "Berhasil menghapus data",
+                                                            NotificationType: 'info',
+                                                            ButtonType: 'ok',
+                                                            Action: async () => {
+                                                                await invalidateAll();
+                                                                refreshData();
+                                                                deleteArray(newMsgBoxBackUp, 'Error Terjadi');
+                                                                deleteArray(newMsgBoxBackUp, 'Berhasil');
+                                                            }
+                                                        })
+                                                    } catch (error) {
+                                                        newMsgBoxBackUp.push({
+                                                            Title: "Error Terjadi",
+                                                            Message: (error as Error).message,
+                                                            NotificationType: 'danger',
+                                                            ButtonType: 'ok',
+                                                            Action: () => {
+                                                                deleteArray(newMsgBoxBackUp, 'Error Terjadi');
+                                                            }
+                                                        })
+                                                    }
+                                                    deleteArray(newMsgBoxBackUp, 'Harap Tunggu');
+                                                    deleteArray(newMsgBoxBackUp, "Yakin?");
+                                                }else if(result === 'no'){
+                                                    deleteArray(newMsgBoxBackUp, "Yakin?");
+                                                }
+                                            }
+                                        });
+                                    }}>
+                                        Delete
+                                    </button>
                                 </div>
                             {/each}
                             {#if combined?.length === 0}
-                                <p class="opacity-60">Tidak ada data di bulan ini.</p>
+                                <p class="opacity-60 text-black">Tidak ada data di bulan ini.</p>
                             {/if}
                         {:else if subMenu.titleSubMenu === "Masalah"}
                             {#each filteredMasalah as item}
-                                <div class="item">
-                                    <p>Host: {data?.userNow?.username}</p>
-                                    <p>Unit: {item.unitName}</p>
-                                    <p>Keterangan: {item.desc}</p>
-                                    <p>Kapan: {item.when.toLocaleDateString()} {item.when.toLocaleTimeString()}</p>
+                                <div class="text-white flex flex-col justify-center items-center text-center flex-grow w-full h-fit bg-slate-900 rounded-2xl p-3 space-y-3 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-900">
+                                    <div class="item">
+                                        <p>Host: {data?.userNow?.username}</p>
+                                        <p>Unit: {item.unitName}</p>
+                                        <p>Keterangan: {item.desc}</p>
+                                        <p>Kapan: {item.when.toLocaleDateString()} {item.when.toLocaleTimeString()}</p>
+                                    </div>
+                                    <button class="px-5 py-2.5 rounded-xl bg-red-600 text-white font-medium shadow-md hover:bg-red-700 active:scale-95 transition-all duration-200" onclick={async () => {
+                                        newMsgBoxBackUp.push({
+                                            Title: "Yakin?",
+                                            Message: "Yakin ingin menghapus ini?",
+                                            NotificationType: 'info',
+                                            ButtonType: 'yesno',
+                                            Action: async (result) => {
+                                                if(result === 'yes'){
+                                                    const formData: FormData = new FormData();
+                                                    formData.set('typeOfDelete', 'masalah');
+                                                    formData.set('id', item.id);
+                                                    newMsgBoxBackUp.push({
+                                                        Title: "Harap Tunggu",
+                                                        Message: "Harap menunggu saat menghapus data",
+                                                        NotificationType: 'info',
+                                                        Action: () => {
+                                                            
+                                                        }
+                                                    })
+                                                    try {
+                                                        const response = await fetch('/api/hapus_data', {
+                                                            method: 'POST',
+                                                            body: formData,
+                                                        });
+
+                                                        let result = '';
+                                                        if (!response.ok){
+                                                            result = await response.text();
+		                                                    throw new Error(result || 'Error tidak diketahui, hubungi developer');
+                                                        }
+                                                        
+                                                        result = await response.text(); // Or response.text() depending on your API
+                                                        newMsgBoxBackUp.push({
+                                                            Title: "Berhasil",
+                                                            Message: "Berhasil menghapus data",
+                                                            NotificationType: 'info',
+                                                            ButtonType: 'ok',
+                                                            Action: async () => {
+                                                                await invalidateAll();
+                                                                refreshData();
+                                                                deleteArray(newMsgBoxBackUp, 'Error Terjadi');
+                                                                deleteArray(newMsgBoxBackUp, 'Berhasil');
+                                                            }
+                                                        })
+                                                    } catch (error) {
+                                                        newMsgBoxBackUp.push({
+                                                            Title: "Error Terjadi",
+                                                            Message: (error as Error).message,
+                                                            NotificationType: 'danger',
+                                                            ButtonType: 'ok',
+                                                            Action: () => {
+                                                                deleteArray(newMsgBoxBackUp, 'Error Terjadi');
+                                                            }
+                                                        })
+                                                    }
+                                                    deleteArray(newMsgBoxBackUp, 'Harap Tunggu');
+                                                    deleteArray(newMsgBoxBackUp, "Yakin?");
+                                                }else if(result === 'no'){
+                                                    deleteArray(newMsgBoxBackUp, "Yakin?");
+                                                }
+                                            }
+                                        });
+                                    }}>
+                                        Delete
+                                    </button>
                                 </div>
                             {/each}
                             {#if filteredMasalah.length === 0}
-                                <p class="opacity-60">Tidak ada data di bulan ini.</p>
+                                <p class="opacity-60 text-black">Tidak ada data di bulan ini.</p>
                             {/if}
                         {:else if subMenu.titleSubMenu === "Absensi"}
                             {#each filteredAbsensi as item}
-                                <div class="flex flex-col justify-center items-center  justify-items-center-safe item">
-                                    <img width="96" height="96" class="object-fill" src={`https://res.cloudinary.com/du0gb4nqq/image/upload/v1762169111/${item.fotoUrl}.jpg`} alt="">
-                                    <p>Nama: {item.name}</p>
-                                    <p>Jabatan: {accountTypeMap[item.accountType]}</p>
-                                    <p>Kapan: {item.when.toLocaleDateString()} {item.when.toLocaleTimeString()}</p>
+                                <div class="text-white flex flex-col justify-center items-center text-center flex-grow w-full h-fit bg-slate-900 rounded-2xl p-3 space-y-3 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-900">
+                                    <div class="flex flex-col justify-center items-center  justify-items-center-safe item">
+                                        <img width="96" height="96" class="object-fill" src={`https://res.cloudinary.com/du0gb4nqq/image/upload/v1762169111/${item.fotoUrl}.jpg`} alt="">
+                                        <p>Nama: {item.name}</p>
+                                        <p>Jabatan: {accountTypeMap[item.accountType]}</p>
+                                        <p>Kapan: {item.when.toLocaleDateString()} {item.when.toLocaleTimeString()}</p>
+                                    </div>
+                                    <button class="px-5 py-2.5 rounded-xl bg-red-600 text-white font-medium shadow-md hover:bg-red-700 active:scale-95 transition-all duration-200" onclick={async () => {
+                                        newMsgBoxBackUp.push({
+                                            Title: "Yakin?",
+                                            Message: "Yakin ingin menghapus ini?",
+                                            NotificationType: 'info',
+                                            ButtonType: 'yesno',
+                                            Action: async (result) => {
+                                                if(result === 'yes'){
+                                                    const formData: FormData = new FormData();
+                                                    formData.set('typeOfDelete', 'absensi');
+                                                    formData.set('id', item.id);
+                                                    newMsgBoxBackUp.push({
+                                                        Title: "Harap Tunggu",
+                                                        Message: "Harap menunggu saat menghapus data",
+                                                        NotificationType: 'info',
+                                                        Action: () => {
+                                                            
+                                                        }
+                                                    })
+                                                    try {
+                                                        const response = await fetch('/api/hapus_data', {
+                                                            method: 'POST',
+                                                            body: formData,
+                                                        });
+
+                                                        let result = '';
+                                                        if (!response.ok){
+                                                            result = await response.text();
+		                                                    throw new Error(result || 'Error tidak diketahui, hubungi developer');
+                                                        }
+                                                        
+                                                        result = await response.text(); // Or response.text() depending on your API
+                                                        newMsgBoxBackUp.push({
+                                                            Title: "Berhasil",
+                                                            Message: "Berhasil menghapus data",
+                                                            NotificationType: 'info',
+                                                            ButtonType: 'ok',
+                                                            Action: async () => {
+                                                                await invalidateAll();
+                                                                refreshData();
+                                                                deleteArray(newMsgBoxBackUp, 'Error Terjadi');
+                                                                deleteArray(newMsgBoxBackUp, 'Berhasil');
+                                                            }
+                                                        })
+                                                    } catch (error) {
+                                                        newMsgBoxBackUp.push({
+                                                            Title: "Error Terjadi",
+                                                            Message: (error as Error).message,
+                                                            NotificationType: 'danger',
+                                                            ButtonType: 'ok',
+                                                            Action: () => {
+                                                                deleteArray(newMsgBoxBackUp, 'Error Terjadi');
+                                                            }
+                                                        })
+                                                    }
+                                                    deleteArray(newMsgBoxBackUp, 'Harap Tunggu');
+                                                    deleteArray(newMsgBoxBackUp, "Yakin?");
+                                                }else if(result === 'no'){
+                                                    deleteArray(newMsgBoxBackUp, "Yakin?");
+                                                }
+                                            }
+                                        });
+                                    }}>
+                                        Delete
+                                    </button>
                                 </div>
                             {/each}
                             {#if filteredAbsensi.length === 0}
-                                <p class="opacity-60">Tidak ada data di bulan ini.</p>
+                                <p class="opacity-60 text-black">Tidak ada data di bulan ini.</p>
                             {/if}
                         {/if}
 
-                    </div>
+                    
                 </div>
-                {#if subMenu.titleSubMenu === "Unit"}
-                    <button
-                        class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 mt-3"
-                        onclick={async () => await exportToExcel()}>
-                        ⬇️ Export to Excel
-                    </button>
-                {:else if subMenu.titleSubMenu === "Masalah"}
-                    <button
-                        class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 mt-3"
-                        onclick={async () => await exportExcel()}>
-                        ⬇️ Export to Excel
-                    </button>
-                {:else if subMenu.titleSubMenu === "Absensi"}
-                    <button
-                        class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 mt-3"
-                        onclick={async () => await eExcel()}>
-                        ⬇️ Export to Excel
-                    </button>
-                {/if}
+                <button
+                    class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 mt-3"
+                    onclick={async () => await exportToExcel((subMenu.titleSubMenu === "Unit") ? 'units_excel' : (subMenu.titleSubMenu === "Masalah") ? 'masalah_excel' : (subMenu.titleSubMenu === "Absensi") ? 'absensi_excel' : '')}>
+                    ⬇️ Export to Excel
+                </button>
             </section>
         </ListingComp>
     <!-- HERE LAY THE ADD AND EDIT ACCOUNT -->
@@ -1053,7 +1181,6 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                     }} class="flex flex-col w-full max-w-sm h-fit gap-2" action="?/{(edit === undefined || (edit as Array<string>).length != 0) ? 'editUnit' : 'addUnit'}" method="post" use:enhance={() => {
                         return async ({update}) => {
                             await update();
-                            newMsgBox = undefined!;
                             submiting = false;
                             //console.log(edit);
                             emptiedArray(edit);
@@ -1120,7 +1247,6 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                     }} class="flex flex-col w-full max-w-sm h-fit gap-2" action="{(edit === undefined || (edit as Array<string>).length != 0) ? '?/editAgent' : '?/addAgent'}" method="post" use:enhance={() => {
                         return async ({update}) => {
                             await update();
-                            newMsgBox = undefined!
                             submiting = false;
                             //console.log(edit);
                             emptiedArray(edit);
@@ -1187,7 +1313,6 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                 }} action="?/approve" method="post" use:enhance={async () => {
                     return async ({update}) => {
                         submiting = false;
-                        newMsgBox = undefined!;
                         await update();
                         lihatRooms2 = false;
                         emptiedArray(dataMasalahTerkini);
@@ -1204,6 +1329,18 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                                     newMsgBox = undefined!;
                                 }
                             };
+                        }else{
+                            newMsgBox = {
+                                Title: "Gagal Ditambahkan",
+                                Message: "Agent gagal ditambahkan",
+                                NotificationType: 'danger',
+                                ButtonType: 'ok',
+                                Action: (() => {
+                                    pengaturanClick2();
+                                    submiting = false;
+                                    newMsgBox = undefined!;
+                                })
+                            }
                         }
                     }
                 }}>
@@ -1271,10 +1408,22 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                         focus:outline-none focus:ring-4 focus:ring-blue-400
                     "
                     onclick={() => {
-                        if(!unit.pending){
+                        
+                        if(!unit.pending && unit.state === 'StandBy'){
                             newMsgBox = ({
                                 Title: "Status Room",
                                 Message: "Ruangan sedang dibersihkan",
+                                NotificationType: 'info',
+                                ButtonType: 'ok',
+                                Action: async (result: any) => {
+                                    newMsgBox = undefined!
+                                }
+                            })
+                            return;
+                        }else if(unit.state === 'Ready'){
+                            newMsgBox = ({
+                                Title: "Status Room",
+                                Message: "Ruangan keadaan ready",
                                 NotificationType: 'info',
                                 ButtonType: 'ok',
                                 Action: async (result: any) => {
@@ -1380,6 +1529,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
         <ListingComp editable={false} items={[]} ifItems={false} ifOther={true} title="Absensi" selectedItemsID={0} itemEdit={false} >
             {#if !lihatAbsensi2}
                 <div class=" flex flex-col justify-center items-center text-center flex-grow w-full h-fit bg-slate-900 rounded-2xl p-3 space-y-3 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-900">
+                    <!-- TODO: Replace shit -->
                     {#each data?.dataAbsensi as absen}
                         <button class="
                             justify-center items-center text-center

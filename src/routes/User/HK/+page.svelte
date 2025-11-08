@@ -67,7 +67,7 @@
                 Items.push({
                     id: data.id,
                     name: data.nameUnit.toLocaleUpperCase(),
-                    name2: (data.fromTime && data.toTime) ? data.fromTime + " - " + data.toTime : null,
+                    name2:  ((data.fromTime && data.toTime) ? `${(data.fromTime.getHours() < 10) ? ("0"+data.fromTime.getHours().toString()) : data.fromTime.getHours().toString()}:${(data.fromTime.getMinutes() < 10) ? "0"+data.fromTime.getMinutes().toString() : data.fromTime.getMinutes()}` + " - " + `${(data.toTime.getHours() < 10) ? "0"+data.toTime.getHours().toString() : data.toTime.getHours()}:${(data.toTime.getMinutes() < 10) ? "0"+data.toTime.getMinutes().toString() : data.toTime.getMinutes()}` : ''),
                     event: (() => {
                         edit = true;
                         editName = data.nameUnit;
@@ -79,7 +79,7 @@
                 rooms.push({
                     id: data.id,
                     name: data.nameUnit,
-                    times: (data.fromTime && data.toTime) ? data.fromTime + " - " + data.toTime : '',
+                    times:  ((data.fromTime && data.toTime) ? `${(data.fromTime.getHours() < 10) ? ("0"+data.fromTime.getHours().toString()) : data.fromTime.getHours().toString()}:${(data.fromTime.getMinutes() < 10) ? "0"+data.fromTime.getMinutes().toString() : data.fromTime.getMinutes()}` + " - " + `${(data.toTime.getHours() < 10) ? "0"+data.toTime.getHours().toString() : data.toTime.getHours()}:${(data.toTime.getMinutes() < 10) ? "0"+data.toTime.getMinutes().toString() : data.toTime.getMinutes()}` : ''),
                     state: data.unitState ?? '',
                     pending: data.pending ?? false,
                     kebersihan: data.kebersihan,
@@ -349,7 +349,6 @@
                     return async ({update}) => {
                         submiting = false;
                         await update();
-                        deleteArray(newMsgBox, "Loading");
                         edit = false;
                         await invalidateAll();
                         refreshData();
@@ -365,6 +364,7 @@
                                 }
                             });
                         }else error = true;
+                        deleteArray(newMsgBox, "Loading");
                     }
                 }}>
                 <label for="name">Nama Staff: </label>
@@ -494,8 +494,6 @@
             }} action="?/masalah" method="post" class="flex flex-col w-full h-fit gap-2" enctype="multipart/form-data" use:enhance={() => {
                 return async ({update}) => {
                     submiting = false;
-                    deleteArray(newMsgBox, "Loading");
-                    deleteArray(newMsgBox, "Perhatian");
                     await update();
                     edit = false;
                     await invalidateAll();
@@ -512,6 +510,8 @@
                             }
                         });
                     }else error = true;
+                    deleteArray(newMsgBox, "Loading");
+                    deleteArray(newMsgBox, "Perhatian");
                 }
             }}>
                 <label for="name">Nama Staff: </label>
@@ -520,10 +520,9 @@
                 <input type="text" name="jabatan" value={accountTypeMap[data?.userNow.accountType] || 'Tidak Dikenali'} id="" required readonly>
                 <label for="jam">Jam: </label>
                 <input type="text" name="jam" id="" value={(formatTime(hours)+":"+formatTime(minutes))} required readonly>
-                {#if editOther[0] === 'Working'}
-                    <label for="berat">Apakah masalahnya berat? Jika berat akan kami tutup unitnya: </label>
-                    <input type="checkbox" name="berat" id="" bind:this={bindThisInput}>
-                {/if}
+
+                <label for="berat">Apakah masalahnya berat? Jika berat akan kami tutup unitnya: </label>
+                <input type="checkbox" name="berat" id="" bind:this={bindThisInput}>
                 <label for="masalah">Masalah: </label>
                 <textarea name="masalah" id="" rows="4" cols="50" required ></textarea>
                 <label for="foto">Foto Masalah:</label>
@@ -549,6 +548,7 @@
                                 }
                             }
                         })
+                        return;
                     }
                     bindThisSubmit?.click();
                 }}> SUBMIT </button>
@@ -680,7 +680,6 @@
             use:enhance={() => {
                     return async ({update}) => {
                         submiting = false;
-                        deleteArray(newMsgBox, "Loading");
                         await update();
                         edit = false;
                         await invalidateAll();
@@ -697,6 +696,7 @@
                                 }
                             });
                         }else error = true;
+                        deleteArray(newMsgBox, "Loading");
                     }
                 }
             }

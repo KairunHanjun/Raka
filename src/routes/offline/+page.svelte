@@ -60,7 +60,7 @@
 			interval = setInterval(() => {
 				if (navigator.onLine) {
 					clearInterval(interval!);
-					console.log('✅ Back online — returning to', previousPath);
+					//console.log('✅ Back online — returning to', previousPath);
 					goto(previousPath);
 				}
 			}, 1000);

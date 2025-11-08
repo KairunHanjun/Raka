@@ -2,8 +2,7 @@ import { fail, redirect, type Actions } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { db } from '$lib/server/db';
 import { units, agents, customers, accounts, absensi, masalah } from '$lib/server/db/schema';
-import { eq } from 'drizzle-orm';
-import { asc } from 'drizzle-orm';
+import { eq, asc, and } from 'drizzle-orm';
 import { CREATE } from '$lib/server/upload_cloudinary';
 
 const accountTypes = ["FO", "HK", "T", "H"] as const;
@@ -32,7 +31,7 @@ export const load: PageServerLoad = async ({ locals }) => {
                 .from(masalah)
                 .leftJoin(units, eq(masalah.unitId, units.id))
                 .innerJoin(accounts, eq(units.createdByWho, accounts.username))
-                .where(eq(accounts.createdByWho, locals.user.createdByWho));
+                .where(and(eq(accounts.createdByWho, locals.user.createdByWho), eq(masalah.done, false)));
         return {
             dataUnits,
             dataAgents,
@@ -75,27 +74,21 @@ export const actions: Actions = {
             // 2. Get the related unit
             if(m.berat){
                 const [unit] = await db
-                .select({
-                    id: units.id,
-                    nameUnit: units.nameUnit,
-                    unitState: units.unitState,
-                })
+                .select()
                 .from(units)
                 .where(eq(units.id, m.unitId ?? ''));
-
                 if (!unit) {
                     return fail(422, {
                         success: false,
                         message: "Unit tidak ditemukan",
-                        error: "Terjadi kesalahan saat mencari Unit",
+                        error: "Terjadi kesalahan saat mencari Unit, Hubungi Developer",
                     })
                 }
-                if (unit.unitState === 'Closed') {
-                    await db
-                    .update(units)
-                    .set({ unitState: 'Ready' })
-                    .where(eq(units.id, unit.id));
-                }
+                await db
+                .update(units)
+                .set({ unitState: 'Ready' })
+                .where(eq(units.id, m.unitId ?? ''));
+                
             }
             await db.update(masalah).set({
                 done: true
@@ -110,12 +103,12 @@ export const actions: Actions = {
         }
         return {
             success: true,
-            message: "Berhasil",
-            error: "Selamat anda berhasil melakukan berbaikan ruangan, terima kasih",
+            message: "Selamat anda berhasil melakukan berbaikan ruangan, terima kasih",
+            error: null,
         }
     },
     absen: async (event) => {
-        console.log("Apa yang terjadi dengan dirimu");
+        //console.log("Apa yang terjadi dengan dirimu");
         const formData: FormData = await event.request.formData();
         const nama: string = formData.get('name')?.toString() ?? '';
         const jabatan: "FO" | "HK" | "T" | "H"  = toAccountType(formData.get("accountType")?.toString() ?? '') ?? 'HK';

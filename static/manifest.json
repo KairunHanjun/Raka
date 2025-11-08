@@ -3,6 +3,7 @@
   "short_name": "RQ",
   "start_url": "/",
   "display": "standalone",
+  "background_color": "#141517",
   "icons": [
     {
       "src": "/icons/icon-192.png",

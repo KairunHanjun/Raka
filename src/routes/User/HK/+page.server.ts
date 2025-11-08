@@ -203,17 +203,18 @@ export const actions: Actions = {
                     await db.update(units).set({
                         unitState: 'Closed'
                     }).where(eq(units.id, unitId))
-                    const getPublic_ID = (await db.select().from(customers).where(eq(customers.unitId, unitId)))[0].fotoKTP ?? '';
+                    const getPublic_ID = (await db.select().from(customers).where(eq(customers.unitId, unitId))) ?? false;
                     //If you want to delete it
                     // await db.delete(customers).where(eq(customers.unitId, unit_id));
                     //if you want to keep it, (update the picture id to null please or just empty string)
-                    await db.update(customers).set({
-                        fotoKTP: null,
-                        unitId: null
-                    }).where(eq(customers.fotoKTP, getPublic_ID));
-                    await db.update(units).set({ unitState: 'Ready' }).where(eq(units.id, unitId));
-                    console.log(getPublic_ID);
-                    await DELETE(getPublic_ID);
+                    if(getPublic_ID.length > 0){
+                        await db.update(customers).set({
+                            fotoKTP: null,
+                            unitId: null
+                        }).where(eq(customers.fotoKTP, getPublic_ID[0].fotoKTP ?? ''));
+                        await db.update(units).set({ unitState: 'Ready' }).where(eq(units.id, unitId));
+                        await DELETE(getPublic_ID[0].fotoKTP ?? '');
+                    }
                 }
                 
             }

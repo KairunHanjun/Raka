@@ -36,13 +36,16 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', function(event){
    event.respondWith(async function () {
       try{
+        if (event.request.url.includes('/api/units_excel') || event.request.url.includes('/api/masalah_excel') || event.request.url.includes('/api/absensi_excel')) {
+          event.respondWith(fetch(event.request));
+        }
         var cache = await caches.open('cache');
-      var cachedResponsePromise = await cache.match(event.request);
-      var networkResponsePromise = fetch(event.request);
-      event.waitUntil(async function () {
-         var networkResponse = await networkResponsePromise;
-         await cache.put(event.request, networkResponse.clone());
-      }());
+        var cachedResponsePromise = await cache.match(event.request);
+        var networkResponsePromise = fetch(event.request);
+        event.waitUntil(async function () {
+          var networkResponse = await networkResponsePromise;
+          await cache.put(event.request, networkResponse.clone());
+        }());
       return cachedResponsePromise || networkResponsePromise;
       }catch(error){
         const cachedResponse = await caches.match('/offline');

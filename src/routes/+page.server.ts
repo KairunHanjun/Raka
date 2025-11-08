@@ -2,7 +2,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import { db } from '$lib/server/db';
 import { eq } from 'drizzle-orm';
 import * as auth from '$lib/server/auth';
-import { accounts } from '$lib/server/db/schema';
+import { accounts, session } from '$lib/server/db/schema';
 import { verify } from 'argon2';
 
 const homeRoutes = {
@@ -32,7 +32,6 @@ export const actions = {
 		try {
 			// Fetch user
 			[user] = await db.select().from(accounts).where(eq(accounts.username, username.toLocaleLowerCase()));
-
 			if (!user) 
 				return fail(400, { error: 'Username atau password salah' });
 
@@ -44,15 +43,22 @@ export const actions = {
 				});
 			}
 
+			const check_session = await db.select().from(session).where(eq(session.userId, user.id));
+			if(check_session.length > 0){
+				return fail(400, {
+					error: "Anda sudah login pada perangkat lain"
+				});
+			}
+
 			// Create session
 			const token = auth.generateSessionToken();
-			const session = await auth.createSession(token, user.id);
-
+			const session2 = await auth.createSession(token, user.id);
+			
 			// Set cookie
 			auth.setSessionTokenCookie(
 				{ cookies } as any, // compatible with RequestEvent
 				token,
-				session.expiresAt,
+				session2.expiresAt,
 				'/'
 			);
 

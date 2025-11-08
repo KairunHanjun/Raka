@@ -67,7 +67,7 @@
                 Items.push({
                     id: data.id,
                     name: data.nameUnit.toLocaleUpperCase(),
-                    name2: (data.fromTime && data.toTime) ? data.fromTime + " - " + data.toTime : null,
+                    name2: ((data.fromTime && data.toTime) ? `${(data.fromTime.getHours() < 10) ? ("0"+data.fromTime.getHours().toString()) : data.fromTime.getHours().toString()}:${(data.fromTime.getMinutes() < 10) ? "0"+data.fromTime.getMinutes().toString() : data.fromTime.getMinutes()}` + " - " + `${(data.toTime.getHours() < 10) ? "0"+data.toTime.getHours().toString() : data.toTime.getHours()}:${(data.toTime.getMinutes() < 10) ? "0"+data.toTime.getMinutes().toString() : data.toTime.getMinutes()}` : ''),
                     event: (() => {
                         edit = true;
                         editName = data.nameUnit;
@@ -79,7 +79,7 @@
                 rooms.push({
                     id: data.id,
                     name: data.nameUnit,
-                    times: (data.fromTime && data.toTime) ? data.fromTime + " - " + data.toTime : '',
+                    times: ((data.fromTime && data.toTime) ? `${(data.fromTime.getHours() < 10) ? ("0"+data.fromTime.getHours().toString()) : data.fromTime.getHours().toString()}:${(data.fromTime.getMinutes() < 10) ? "0"+data.fromTime.getMinutes().toString() : data.fromTime.getMinutes()}` + " - " + `${(data.toTime.getHours() < 10) ? "0"+data.toTime.getHours().toString() : data.toTime.getHours()}:${(data.toTime.getMinutes() < 10) ? "0"+data.toTime.getMinutes().toString() : data.toTime.getMinutes()}` : ''),
                     state: data.unitState ?? '',
                     pending: data.pending ?? false,
                     kebersihan: data.kebersihan
@@ -136,7 +136,9 @@
     let error = $state(false);
     let lihatAbsen: boolean = $state(false);
     let bindThisButton: HTMLButtonElement | undefined = $state(undefined);
+    let anyThing: any = $state(undefined);
     let isOnline: boolean = $state(true);
+    let editPrice: number = $state(0);
 
     $effect(() => {
 		const interval = setInterval(async () => {
@@ -204,7 +206,6 @@
 {/if}
 
 {#if ((form?.error) || (data?.error))}
-    {error = true}
     {#if error}
         <MessageBox title="Masalah Terjadi!" type="warning" buttonType="ok" handleResult={() => {
             error = false;
@@ -341,7 +342,6 @@
             }} action="?/costumer" method="post" class="flex flex-col w-full h-fit gap-2" enctype="multipart/form-data" use:enhance={async () => {
                 return async ({update}) => {
                     submiting = false;
-                    deleteArray(newMsgBox, "Loading");
                     await update();
                     edit = false;
                     await invalidateAll();
@@ -358,6 +358,7 @@
                             }
                         });
                     }else error = true;
+                    deleteArray(newMsgBox, "Loading");
                 }
             }}>
                 <label for="name">Nama Customer: </label>
@@ -403,15 +404,27 @@
                 <label for="agent">Pilih Agent: </label>
                 <select name="agent" id="" required>
                     {#each data?.dataAgents as agent}
-                        <option value={agent.id + "|" + agent.createdByWho}>{agent.nameAgent} (Host: {agent.createdByWho})</option>
+                        <option value={agent.id + "|" + agent.createdByWho}>{agent.nameAgent}</option>
                     {/each}
                 </select>
                 <label for="price">Input Harga: </label>
                 <input type="number" name="price" pattern="[0-9]*" id="" required>
-                <label for="ktp">Foto KTP:</label>
-                <input type="file" id="ktp" name="ktp" accept="image/*" capture="environment" required />           
+                <label for="komisi">Input Komisi: </label>
+                <input type="number" name="komisi" pattern="[0-9]*" id="" required>
+                <img src={anyThing} alt="" />
+                <input onchange={
+                    ({currentTarget})=>{
+                        if(currentTarget.files){
+                            const reader = new FileReader(); 
+                            reader.onload = function(event) {
+                                anyThing = event.target?.result;
+                            }
+                            reader.readAsDataURL(currentTarget.files[0]);
+                        } 
+                    }
+                } type="file" id="ktp" name="ktp" accept="image/*" capture="environment" required />           
                 <input type="hidden" name="unit_id" value={editId}>
-                <button disabled={submiting} type="submit" class="flex w-full h-fit bg-gradient-to-b from-green-500 via-green-600 to-green-700 justify-center items-center text-center text-2xl rounded-2xl font-sans"> SUBMIT </button>
+                <button type="submit" class="flex w-full h-fit bg-gradient-to-b from-green-500 via-green-600 to-green-700 justify-center items-center text-center text-2xl rounded-2xl font-sans"> Submit </button>
             </form>
         {:else if editOther[0] === "Working"}
             <form onsubmit={() => {
@@ -426,7 +439,6 @@
             }} action="?/editcostumer" method="post" class="flex flex-col w-full h-fit gap-2" enctype="multipart/form-data" use:enhance={async () => {
                 return async ({update}) => {
                     submiting = false;
-                    deleteArray(newMsgBox, "Loading");
                     await update();
                     edit = false;
                     await invalidateAll();
@@ -443,14 +455,17 @@
                             }
                         });
                     }else error = true;
+                    deleteArray(newMsgBox, "Loading");
                 }
             }}>
                 <p>Nama Customer: {editOther[1]}</p>
                 <input type="hidden" name="unit_id" value={editId}>
                 <label for="duration">Lama: </label>
-                <select name="duration" id="duration" bind:this={bindThisSelect} onchange={() => {
-                    updateWaktu = updateDataToTime();
+                <select name="duration" id="duration" bind:this={bindThisSelect} onchange={({currentTarget}) => {
                     JamorHari = bindThisSelect?.options[bindThisSelect.selectedIndex].text ?? '';
+                    const editOther4Date = (new Date(editOther[4]));
+                    const editTime = (new Date(editOther4Date.setHours(editOther4Date.getHours() + (+currentTarget.value))))
+                    editOther[4] = editTime.toString();
                 }}>
                     {JamorHari = bindThisSelect?.options[bindThisSelect.selectedIndex].text ?? ''}
                     <option value="">Ubah Status Room</option>
@@ -472,12 +487,12 @@
                         <div class="flex justify-between items-center h-fit w-full">
                             <div class="flex flex-col h-fit w-fit">
                                 <label for="enter">Jam Masuk: </label>
-                                <input type="time" name="enter" id="" bind:this={bindThisInput} onchange={() => updateWaktu = updateDataToTime()} required>
+                                <input type="time" name="enter" id="" bind:this={bindThisInput} value={`${String((new Date(editOther[3]).getHours())).padStart(2, '0')}:${String((new Date(editOther[3]).getMinutes())).padStart(2, '0')}`} readonly required>
                             </div>
                             
                             <div class="flex flex-col h-fit w-fit">
                                 <label for="out">Jam Keluar: </label>
-                                <input type="time" name="out" id="" readonly={bindThisSelect?.options[bindThisSelect?.selectedIndex].text !== "Kostum Jam"} value={updateWaktu} required>
+                                <input type="time" name="out" id="" value={`${String((new Date(editOther[4]).getHours())).padStart(2, '0')}:${String((new Date(editOther[4]).getMinutes())).padStart(2, '0')}`} readonly  required>
                             </div>
                         </div>
                     {:else}
@@ -493,6 +508,8 @@
                             </div>
                         </div>
                     {/if}
+                    <label for="price">Tambahan Harga (Harga Mejadi: {(+editOther[2])+editPrice})? </label>
+                    <input type="number" bind:value={editPrice} name="price" id="">
                 {/if}
                 <button disabled={submiting} type="submit" class="flex w-full h-fit bg-gradient-to-b from-green-500 via-green-600 to-green-700 justify-center items-center text-center text-2xl rounded-2xl font-sans"> SUBMIT </button>
             </form>
@@ -509,7 +526,7 @@
             }} action="?/approve" method="post" use:enhance={async () => {
                 return async ({update}) => {
                     submiting = false;
-                    deleteArray(newMsgBox, "Loading");
+                    
                     await update();
                     edit = false;
                     editId = "";
@@ -529,6 +546,7 @@
                             }
                         });
                     }else error = true;
+                    deleteArray(newMsgBox, "Loading");
                 }
             }}>
                 <input type="hidden" name="unitId" value={editId}>
@@ -593,13 +611,14 @@
                     focus:outline-none focus:ring-4 focus:ring-blue-400
                   "
                 onclick={() => {
+                    
                     if(unit.state === "Ready"){
                         edit = true;
                         editId = unit.id;
                         editName = unit.name;
                         editOther.push(unit.state);
                     }else if(unit.state === "Working"){
-                        const costumerBersangkutan = data?.dataCustomers?.find(x => x.unitId === unit.id)?.name ?? undefined;
+                        const costumerBersangkutan = data?.dataCustomers?.find(x => x.unitId === unit.id) ?? undefined;
                         if(!costumerBersangkutan){
                             newMsgBox.push({
                                 Title: "Status Room",
@@ -616,7 +635,10 @@
                         editId = unit.id;
                         editName = unit.name;
                         editOther.push(unit.state);
-                        editOther.push(costumerBersangkutan);
+                        editOther.push(costumerBersangkutan.name);
+                        editOther.push(costumerBersangkutan.price.toString());
+                        editOther.push((new Date(costumerBersangkutan.fromTime).toString()));
+                        editOther.push((new Date(costumerBersangkutan.toTime)).toString());
                     }else if (unit.state === "StandBy"){
                         if(!unit.pending){
                             newMsgBox.push({
@@ -690,8 +712,6 @@
             }} action="?/masalah" method="post" class="flex flex-col w-full h-fit gap-2" enctype="multipart/form-data" use:enhance={() => {
                 return async ({update}) => {
                     submiting = false;
-                    deleteArray(newMsgBox, "Loading");
-                    deleteArray(newMsgBox, "Perhatian");
                     await update();
                     edit = false;
                     await invalidateAll();
@@ -708,6 +728,8 @@
                             }
                         });
                     }else error = true;
+                    deleteArray(newMsgBox, "Loading");
+                    deleteArray(newMsgBox, "Perhatian");
                 }
             }}>
                 <label for="name">Nama Staff: </label>
@@ -716,10 +738,8 @@
                 <input type="text" name="jabatan" value={accountTypeMap[data?.userNow.accountType] || 'Tidak Dikenali'} id="" required readonly>
                 <label for="jam">Jam: </label>
                 <input type="text" name="jam" id="" value={(formatTime(hours)+":"+formatTime(minutes))} required readonly>
-                {#if editOther[0] === 'Working'}
-                    <label for="berat">Apakah masalahnya berat? Jika berat akan kami tutup unitnya: </label>
-                    <input type="checkbox" name="berat" id="" bind:this={bindThisInput}>
-                {/if}
+                <label for="berat">Apakah masalahnya berat? Jika berat akan kami tutup unitnya: </label>
+                <input type="checkbox" name="berat" id="" bind:this={bindThisInput}>
                 <label for="masalah">Masalah: </label>
                 <textarea name="masalah" id="" rows="4" cols="50" required ></textarea>
                 <label for="foto">Foto Masalah:</label>
@@ -745,6 +765,7 @@
                                 }
                             }
                         })
+                        return;
                     }
                     bindThisSubmit?.click();
                 }}> SUBMIT </button>
@@ -842,7 +863,7 @@
                 </button>
             {/each}
         </div>
-        {#if !(data?.dataAbsensi?.some(data => data.whenEntry.toDateString() === (new Date()).toDateString())) || (data?.dataAbsensi.length == 0)}
+        {#if (data?.dataAbsensi?.filter(data => data.whenEntry.toDateString() === (new Date()).toDateString()))?.length != 2 || (data?.dataAbsensi?.length == 0)}
             <button
                 class="
                 w-full text-white text-3xl font-bold p-5 rounded-2xl
@@ -875,7 +896,6 @@
             use:enhance={() => {
                     return async ({update}) => {
                         submiting = false;
-                        deleteArray(newMsgBox, "Loading");
                         await update();
                         edit = false;
                         await invalidateAll();
@@ -892,6 +912,7 @@
                                 }
                             });
                         }else error = true;
+                        deleteArray(newMsgBox, "Loading");
                     }
                 }
             }

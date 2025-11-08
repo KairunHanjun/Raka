@@ -63,11 +63,11 @@
     onMount(() => {
         if(browser){
             window.addEventListener('online', () => {
-                console.log("You are now connected to the network.");
+                //console.log("You are now connected to the network.");
                 isOnline = true;
             });
             window.addEventListener('offline', () => {
-                console.log("You are not connected to the network.");
+                //console.log("You are not connected to the network.");
                 isOnline = false;
             });
             // Intercept F5 / Ctrl+R / Cmd+R when offline
@@ -134,7 +134,7 @@
                     <form onsubmit={() => {
                         submiting = true;
                         newMsgBox = {
-                            Title: "Loadin",
+                            Title: "Loading",
                             Message: "Harap tunggu",
                             NotificationType: 'info',
                             Action: () => {
@@ -142,7 +142,6 @@
                         }
                     }} class="flex flex-col gap-6" method="post" use:enhance={() => {
                         return async ({update}) => {
-                            newMsgBox = undefined!;
                             await update();
                             if(form?.error){
                                 newMsgBox = {
@@ -155,7 +154,7 @@
                                         newMsgBox = undefined!;
                                     }
                                 }
-                            }
+                            }else newMsgBox = undefined!;
                         }
                     }}>
                         

@@ -48,8 +48,8 @@ export const units = pgTable('units', {
 	id: text('id').primaryKey().$defaultFn(() => uuidv4()).notNull(),
     nameUnit: text('name').unique().notNull(),
     unitState: unitState('unit_state').default('Ready'),
-    fromTime: time('from_time'), // REKOMENDASI: Gunakan time()
-    toTime: time('to_time'), // REKOMENDASI: Gunakan time()
+    fromTime: timestamp('from_time', {mode: 'date', withTimezone: false}), // REKOMENDASI: Gunakan time()
+    toTime: timestamp('to_time', {mode: 'date', withTimezone: false}), // REKOMENDASI: Gunakan time()
     createdByWho: text('created_by_who'),
     pending: boolean('pending').default(false),
     kebersihan: text('kebersihan_id').references(() => kebersihan.id)
@@ -65,6 +65,7 @@ export const customers = pgTable('customers', {
     fromTime: timestamp('from_time', {mode: 'string'}).notNull().defaultNow(), // REKOMENDASI: Gunakan time()
     toTime: timestamp('to_time', {mode: 'string'}).notNull().defaultNow(), // REKOMENDASI: Gunakan time()
     price: integer('price').notNull(),
+    komisi: integer('komisi').notNull(),
     fotoKTP: text('url_fotoKtp'),
     durationDays: boolean('isDurationDays').notNull().default(false)
 }); 

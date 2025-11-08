@@ -67,7 +67,7 @@
                 Items.push({
                     id: data.id,
                     name: data.nameUnit.toLocaleUpperCase(),
-                    name2: (data.fromTime && data.toTime) ? data.fromTime + " - " + data.toTime : null,
+                    name2:  ((data.fromTime && data.toTime) ? `${(data.fromTime.getHours() < 10) ? ("0"+data.fromTime.getHours().toString()) : data.fromTime.getHours().toString()}:${(data.fromTime.getMinutes() < 10) ? "0"+data.fromTime.getMinutes().toString() : data.fromTime.getMinutes()}` + " - " + `${(data.toTime.getHours() < 10) ? "0"+data.toTime.getHours().toString() : data.toTime.getHours()}:${(data.toTime.getMinutes() < 10) ? "0"+data.toTime.getMinutes().toString() : data.toTime.getMinutes()}` : ''),
                     event: (() => {
                         edit = true;
                         editName = data.nameUnit;
@@ -79,7 +79,7 @@
                 rooms.push({
                     id: data.id,
                     name: data.nameUnit,
-                    times: (data.fromTime && data.toTime) ? data.fromTime + " - " + data.toTime : '',
+                    times:  ((data.fromTime && data.toTime) ? `${(data.fromTime.getHours() < 10) ? ("0"+data.fromTime.getHours().toString()) : data.fromTime.getHours().toString()}:${(data.fromTime.getMinutes() < 10) ? "0"+data.fromTime.getMinutes().toString() : data.fromTime.getMinutes()}` + " - " + `${(data.toTime.getHours() < 10) ? "0"+data.toTime.getHours().toString() : data.toTime.getHours()}:${(data.toTime.getMinutes() < 10) ? "0"+data.toTime.getMinutes().toString() : data.toTime.getMinutes()}` : ''),
                     state: data.unitState ?? '',
                     pending: data.pending ?? false,
                     kebersihan: data.kebersihan,
@@ -113,16 +113,6 @@
         if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) hours = hours - 24
 
         return { hours, minutes };
-    }
-
-    function updateDataToTime(): string{
-        if(!bindThisSelect?.value.includes("Kustom")){
-            const udin = parseTimeStringToHoursMinutes(bindThisInput?.value ?? "", parseInt(bindThisSelect?.value ?? "0", 10));
-            if(udin){
-                return ((udin.hours < 10) ? "0" : "") + udin.hours + ":" + ((udin.minutes < 10) ? "0" : "") + udin.minutes;
-            }
-        }
-        return "";
     }
 
     let loading: boolean = false;
@@ -337,7 +327,7 @@
                                     </div>
                                     <div class="w-full h-fit flex flex-col justify-center justify-items-center items-center text-center">
                                         <p class="text-[1rem] font-bold">Sesudah</p>
-                                        <enhanced:img src={anyThing} alt="" />
+                                        <img src={anyThing} alt="" />
                                     </div>
                                 </div>
                                 <p class="font-bold text-[1rem] text-center">Nama: {data?.userNow.username}</p>
@@ -366,7 +356,6 @@
                                 return async ({update}) => {
                                     submiting = false;
                                     await update();
-                                    deleteArray(newMsgBox, "Loading");
                                     edit = false;
                                     await invalidateAll();
                                     refreshData();
@@ -379,9 +368,12 @@
                                             Action: () => {
                                                 emptiedArray(editOther);
                                                 deleteArray(newMsgBox, "Berhasil");
+                                                benarSalah = false;
+                                                inspeksiMasalah = false;
                                             }
                                         });
                                     }else error = true;
+                                    deleteArray(newMsgBox, "Loading");
                                 }
                             }}>
                             <p class=" text-blue-600 font-bold text-3xl mt-2 pt-2">Opsi Teknisi</p>
@@ -534,7 +526,6 @@
                 use:enhance={() => {
                         return async ({update}) => {
                             submiting = false;
-                            deleteArray(newMsgBox, "Loading");
                             await update();
                             edit = false;
                             await invalidateAll();
@@ -551,6 +542,7 @@
                                     }
                                 });
                             }else error = true;
+                            deleteArray(newMsgBox, "Loading");
                         }
                     }
                 }
