@@ -7,8 +7,6 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
 	plugins: [tailwindcss(), sveltekit(), enhancedImages(), SvelteKitPWA({
-						// PWA options like manifest, icons, workbox configuration
-						// Example:
 						manifest: {
 						name: "RoomQu",
 						short_name: "RQ",
