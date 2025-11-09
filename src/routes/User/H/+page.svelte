@@ -653,8 +653,6 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                             return;
                         }
                         const result = await response.json();
-                        await invalidateAll();
-                        refreshData();
                         //console.log(userItems);
                     }catch (error) {console.log(error);}
                     newMsgBox = {
@@ -673,6 +671,8 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                     pengaturanClick2();
                 }
             }
+            await invalidateAll();
+            refreshData();
             editData = false;
         }
     }>
@@ -1142,8 +1142,6 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                             await update();
                             newMsgBox = undefined!;
                             emptiedArray(edit);
-                            await invalidateAll();
-                            refreshData();
                             newMsgBox = {
                                 Title: (form?.error) ? "Gagal" : "Berhasil",
                                 Message: (form?.error) ? (form?.description as string) : "Berhasil tambah akun",
@@ -1155,7 +1153,8 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                                     newMsgBox = undefined!;
                                 }
                             }
-                            
+                            await invalidateAll();
+                            refreshData();
                         }
                     }}>
                         <label for="Role">Role :</label>
@@ -1212,8 +1211,6 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                                         newMsgBox = undefined!;
                                     })
                                 }
-                                await invalidateAll();
-                                refreshData();
                             }else{
                                 newMsgBox = {
                                     Title: "Gagal Ditambahkan",
@@ -1227,6 +1224,8 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                                     })
                                 }
                             }
+                            await invalidateAll();
+                            refreshData();
                         }
                     }}>
                         <label for="UnitName">Unit Name: </label>
@@ -1266,8 +1265,6 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                             //console.log(edit);
                             emptiedArray(edit);
                             if(!form?.error){
-                                await invalidateAll();
-                                refreshData();
                                 newMsgBox ={
                                     Title: "Berhasil Ditambahkan",
                                     Message: "Unit berhasil ditambahkan",
@@ -1292,6 +1289,8 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                                     })
                                 }
                             }
+                            await invalidateAll();
+                            refreshData();
                         }
                     }}>
                         <label for="AgentName">Agent Name: </label>
@@ -1331,8 +1330,6 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                         await update();
                         lihatRooms2 = false;
                         emptiedArray(dataMasalahTerkini);
-                        await invalidateAll();
-                        refreshData();
                         if(form?.success){
                             newMsgBox = {
                                 Title: "Berhasil",
@@ -1357,6 +1354,8 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                                 })
                             }
                         }
+                        await invalidateAll();
+                        refreshData();
                     }
                 }}>
                     

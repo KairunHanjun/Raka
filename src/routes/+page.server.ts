@@ -32,10 +32,7 @@ export const actions = {
 		try {
 			if (locals.session){
 				console.log(locals.session);
-				return fail(400, {
-					error: "Anda sudah login saya akan refresh halamanya, harap keluar dulu jika ingin login dengan akun ini",
-					alreadyLogin: true
-				});
+				redirect(303, "/");
 			}
 			// Fetch user
 			[user] = await db.select().from(accounts).where(eq(accounts.username, username.toLocaleLowerCase()));

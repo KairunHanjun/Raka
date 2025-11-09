@@ -31,7 +31,6 @@ export const checkUnitsMiddleware: Handle = async ({ event, resolve }) => {
 };
 
 const authMiddleware: Handle = async ({event, resolve}) => {
-	
 	const sessionToken = event.cookies.get(auth.sessionCookieName);
 	let user = null;
 	let session = null;

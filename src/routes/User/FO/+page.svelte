@@ -240,7 +240,6 @@
             };
         }
     });
-
     refreshData();
 </script>
 
@@ -384,8 +383,6 @@
                     submiting = false;
                     await update();
                     edit = false;
-                    await invalidateAll();
-                    refreshData();
                     if(form?.success){
                         newMsgBox.push({
                             Title: "Berhasil",
@@ -421,6 +418,8 @@
                         }
                         error = true;
                     }
+                    await invalidateAll();
+                    refreshData();
                     deleteArray(newMsgBox, "Loading");
                     anyThing = undefined!;
                 }
@@ -512,8 +511,6 @@
                     submiting = false;
                     await update();
                     edit = false;
-                    await invalidateAll();
-                    refreshData();
                     if(form?.success){
                         newMsgBox.push({
                             Title: "Berhasil",
@@ -527,6 +524,8 @@
                         });
                     }else error = true;
                     deleteArray(newMsgBox, "Loading");
+                    await invalidateAll();
+                    refreshData();
                 }
             }}>
                 <p>Nama Customer: {editOther[1]}</p>
@@ -603,8 +602,6 @@
                     editId = "";
                     editName = "";
                     emptiedArray(editOther);
-                    await invalidateAll();
-                    refreshData();
                     if(form?.success){
                         newMsgBox.push({
                             Title: "Berhasil",
@@ -617,6 +614,8 @@
                             }
                         });
                     }else error = true;
+                    await invalidateAll();
+                    refreshData();
                     deleteArray(newMsgBox, "Loading");
                 }
             }}>
@@ -779,8 +778,6 @@
                     submiting = false;
                     await update();
                     edit = false;
-                    await invalidateAll();
-                    refreshData();
                     if(form?.success){
                         newMsgBox.push({
                             Title: "Berhasil",
@@ -816,6 +813,8 @@
                         }
                         error = true;
                     };
+                    await invalidateAll();
+                    refreshData();
                     anyThing = undefined!;
                     deleteArray(newMsgBox, "Loading");
                     deleteArray(newMsgBox, "Perhatian");
@@ -994,8 +993,7 @@
                         submiting = false;
                         await update();
                         edit = false;
-                        await invalidateAll();
-                        refreshData();
+                        
                         if(form?.success){
                             newMsgBox.push({
                                 Title: "Berhasil",
@@ -1030,6 +1028,8 @@
                             }
                             error = true;
                         };
+                        await invalidateAll();
+                        refreshData();
                         anyThing = undefined!;
                         deleteArray(newMsgBox, "Loading");
                     }
