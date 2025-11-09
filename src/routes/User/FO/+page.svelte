@@ -78,7 +78,7 @@
                 NotificationType: "info",
                 Action: () => {}
             })
-            const compressedImage1 = await compressImage(bindThisInput2?.files[0], 4);
+            const compressedImage1 = await compressImage(bindThisInput2?.files[0], 2);
             const formData = new FormData();
             formData.set('img1', compressedImage1);
             formData.set("once", "1");
@@ -378,13 +378,6 @@
         </div>
         {#if editOther[0] === "Ready"}
             <form onsubmit={() => {
-                submiting=true;
-                newMsgBox.push({
-                    Title: "Loading",
-                    Message: "Harap Tunggu",
-                    NotificationType: "info",
-                    Action: () => {}
-                })
                 
             }} action="?/costumer" method="post" class="flex flex-col w-full h-fit gap-2" enctype="multipart/form-data" use:enhance={async () => {
                 return async ({update}) => {
@@ -401,6 +394,7 @@
                             ButtonType: 'ok',
                             Action: () => {
                                 emptiedArray(editOther);
+                                deleteArray(newMsgBox, "Loading");
                                 deleteArray(newMsgBox, "Berhasil");
                             }
                         });
@@ -794,6 +788,7 @@
                             NotificationType: 'info',
                             ButtonType: 'ok',
                             Action: () => {
+                                deleteArray(newMsgBox, "Loading");
                                 emptiedArray(editOther);
                                 deleteArray(newMsgBox, "Berhasil");
                             }
@@ -991,12 +986,6 @@
         <form 
             onsubmit={async () => {
                 //submiting=true;
-                newMsgBox.push({
-                    Title: "Loading",
-                    Message: "Harap Tunggu",
-                    NotificationType: "info",
-                    Action: () => {}
-                });
             }}
             
         action="?/absen" method="post" class="flex flex-col w-full h-fit gap-2" enctype="multipart/form-data"
