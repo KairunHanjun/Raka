@@ -30,7 +30,8 @@ export const actions = {
 			createdByWho: string;
 		} | undefined = undefined;
 		try {
-			if (locals.user){
+			if (locals.session){
+				console.log(locals.session);
 				return fail(400, {
 					error: "Anda sudah login saya akan refresh halamanya, harap keluar dulu jika ingin login dengan akun ini",
 					alreadyLogin: true
