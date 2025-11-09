@@ -151,6 +151,9 @@
                                     ButtonType: 'ok',
                                     Action: () => {
                                         submiting=false;
+                                        if(form?.alreadyLogin)
+                                            location.reload();
+                                        
                                         newMsgBox = undefined!;
                                     }
                                 }

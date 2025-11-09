@@ -13,7 +13,7 @@ const homeRoutes = {
 } as const;
 
 export const actions = {
-	default: async ({ request, cookies, url }) => {
+	default: async ({ request, cookies, locals }) => {
 		const formData = await request.formData();
 		const username = formData.get('username')?.toString().trim() ?? '';
 		const password = formData.get('password')?.toString().trim() ?? '';
@@ -30,6 +30,12 @@ export const actions = {
 			createdByWho: string;
 		} | undefined = undefined;
 		try {
+			if (locals.user){
+				return fail(400, {
+					error: "Anda sudah login saya akan refresh halamanya, harap keluar dulu jika ingin login dengan akun ini",
+					alreadyLogin: true
+				});
+			}
 			// Fetch user
 			[user] = await db.select().from(accounts).where(eq(accounts.username, username.toLocaleLowerCase()));
 			if (!user) 
@@ -43,6 +49,7 @@ export const actions = {
 				});
 			}
 
+			// Check if someone already login with the account
 			const check_session = await db.select().from(session).where(eq(session.userId, user.id));
 			if(check_session.length > 0){
 				return fail(400, {
