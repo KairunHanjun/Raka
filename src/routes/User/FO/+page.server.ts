@@ -280,7 +280,7 @@ export const actions: Actions = {
                     unitId: null
                 }).where(eq(customers.fotoKTP, getPublic_ID));
                 await db.update(units).set({ 
-                    unitState: 'Ready',
+                    unitState: 'StandBy',
                     fromTime: null,
                     toTime: null,
                     pending: null,
