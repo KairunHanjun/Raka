@@ -9,6 +9,7 @@
 	import { onMount } from "svelte";
     import type { PageProps } from "./$types";
 	import { browser } from "$app/environment";
+	import { compressImage } from "$lib";
     let { data, form }: PageProps = $props();
 
     const editOther: string[] = $state([]);
@@ -43,6 +44,71 @@
         event: void | (() => {}) | (() => void) | any;
         editEvent: void | (() => {}) | (() => void) | any;
     }> = $state([]);
+
+    let loading: boolean = false;
+    let edit: boolean = $state(false);
+    let editName: string = $state("");
+    let editId: string = $state("");
+    let menuClick: string | undefined = $state(undefined);
+    let bindThisSelect: HTMLSelectElement | undefined = $state(undefined);
+    let bindThisInput: HTMLInputElement | undefined = $state(undefined);
+    let bindThisInput2: HTMLInputElement | undefined = $state(undefined);
+    let bindThisInput3: HTMLInputElement | undefined = $state(undefined);
+    let bindThisSubmit: HTMLButtonElement | undefined = $state(undefined);
+    let now: Date = $state(new Date());
+    let hours = $derived(now.getHours());
+    let minutes = $derived(now.getMinutes());
+    let updateWaktu = $state('');
+    let JamorHari = $state("");
+    let submiting = $state(false);
+    let error = $state(false);
+    let lihatAbsen: boolean = $state(false);
+    let bindThisButton: HTMLButtonElement | undefined = $state(undefined);
+    let anyThing: any = $state(undefined);
+    let isOnline: boolean = $state(true);
+    let editPrice: number = $state(0);
+    let picId1 = $state('')
+
+    async function upload(){
+        if(bindThisInput2?.files){
+            submiting=true;
+            newMsgBox.push({
+                Title: "Loading",
+                Message: "Harap Tunggu",
+                NotificationType: "info",
+                Action: () => {}
+            })
+            const compressedImage1 = await compressImage(bindThisInput2?.files[0], 4);
+            const formData = new FormData();
+            formData.set('img1', compressedImage1);
+            formData.set("once", "1");
+            try {
+                const res = await fetch("/api/upload_pic", {
+                    method: "POST",
+                    body: formData,
+                });
+                if (!res.ok) throw new Error(await res.text());
+                res.text().then(responseText => {
+                    if(bindThisInput3){
+                        picId1 = responseText;
+                        bindThisInput3.value = picId1;
+                        bindThisSubmit?.click();
+                    }
+                });
+            } catch (error) {
+                deleteArray(newMsgBox, 'Loading');
+                newMsgBox.push({
+                    Title: "Error Terjadi",
+                    Message: (error as Error).message,
+                    NotificationType: "danger",
+                    ButtonType: 'ok',
+                    Action: () => {
+                        deleteArray(newMsgBox, 'Error Terjadi');
+                    }
+                });
+            }
+        }
+    }
 
     function emptiedArray(arrayHere: Array<any>){
         while(arrayHere.length > 0) {
@@ -119,26 +185,7 @@
         return "";
     }
 
-    let loading: boolean = false;
-    let edit: boolean = $state(false);
-    let editName: string = $state("");
-    let editId: string = $state("");
-    let menuClick: string | undefined = $state(undefined);
-    let bindThisSelect: HTMLSelectElement | undefined = $state(undefined);
-    let bindThisInput: HTMLInputElement | undefined = $state(undefined);
-    let bindThisSubmit: HTMLButtonElement | undefined = $state(undefined);
-    let now: Date = $state(new Date());
-    let hours = $derived(now.getHours());
-    let minutes = $derived(now.getMinutes());
-    let updateWaktu = $state('');
-    let JamorHari = $state("");
-    let submiting = $state(false);
-    let error = $state(false);
-    let lihatAbsen: boolean = $state(false);
-    let bindThisButton: HTMLButtonElement | undefined = $state(undefined);
-    let anyThing: any = $state(undefined);
-    let isOnline: boolean = $state(true);
-    let editPrice: number = $state(0);
+    
 
     $effect(() => {
 		const interval = setInterval(async () => {
@@ -345,6 +392,7 @@
                     await update();
                     edit = false;
                     await invalidateAll();
+                    refreshData();
                     if(form?.success){
                         newMsgBox.push({
                             Title: "Berhasil",
@@ -353,12 +401,34 @@
                             ButtonType: 'ok',
                             Action: () => {
                                 emptiedArray(editOther);
-                                refreshData()
                                 deleteArray(newMsgBox, "Berhasil");
                             }
                         });
-                    }else error = true;
+                    }else {
+                        const formData = new FormData();
+                        formData.set('img1', picId1);
+                        formData.set('once', "1");
+                        try {
+                            const res = await fetch("/api/delete_pic", {
+                                method: "POST",
+                                body: formData,
+                            });
+                            if (!res.ok) throw new Error(await res.text());
+                        }catch(error){
+                            newMsgBox.push({
+                                Title: "Error Terjadi",
+                                Message: (error as Error).message,
+                                NotificationType: "danger",
+                                ButtonType: 'ok',
+                                Action: () => {
+                                    deleteArray(newMsgBox, 'Error Terjadi');
+                                }
+                            });
+                        }
+                        error = true;
+                    }
                     deleteArray(newMsgBox, "Loading");
+                    anyThing = undefined!;
                 }
             }}>
                 <label for="name">Nama Customer: </label>
@@ -415,6 +485,7 @@
                 <input onchange={
                     ({currentTarget})=>{
                         if(currentTarget.files){
+                            submiting = false;
                             const reader = new FileReader(); 
                             reader.onload = function(event) {
                                 anyThing = event.target?.result;
@@ -422,9 +493,15 @@
                             reader.readAsDataURL(currentTarget.files[0]);
                         } 
                     }
-                } type="file" id="ktp" name="ktp" accept="image/*" capture="environment" required />           
+                } type="file" disabled={submiting} bind:this={bindThisInput2} id="ktp" name="ktp" accept="image/*" required />           
                 <input type="hidden" name="unit_id" value={editId}>
-                <button type="submit" class="flex w-full h-fit bg-gradient-to-b from-green-500 via-green-600 to-green-700 justify-center items-center text-center text-2xl rounded-2xl font-sans"> Submit </button>
+                <input type="hidden" name="pic1Id" bind:this={bindThisInput3}>
+                <button type="button" class="flex w-full h-fit bg-gradient-to-b from-green-500 via-green-600 to-green-700 justify-center items-center text-center text-2xl rounded-2xl font-sans"
+                onclick={async () => {
+                    await upload();
+                }}
+                > Submit </button>
+                <button type="submit" class="hidden" aria-label="i" bind:this={bindThisSubmit}></button>
             </form>
         {:else if editOther[0] === "Working"}
             <form onsubmit={() => {
@@ -702,13 +779,7 @@
                 <h1 class=" text-2xl font-bold">{editName}</h1>
             </div>
             <form onsubmit={async () => {
-                submiting=true;
-                newMsgBox.push({
-                    Title: "Loading",
-                    Message: "Harap Tunggu",
-                    NotificationType: "info",
-                    Action: () => {}
-                });
+                
             }} action="?/masalah" method="post" class="flex flex-col w-full h-fit gap-2" enctype="multipart/form-data" use:enhance={() => {
                 return async ({update}) => {
                     submiting = false;
@@ -727,7 +798,30 @@
                                 deleteArray(newMsgBox, "Berhasil");
                             }
                         });
-                    }else error = true;
+                    }else{
+                        const formData = new FormData();
+                        formData.set('img1', picId1);
+                        formData.set('once', "1");
+                        try {
+                            const res = await fetch("/api/delete_pic", {
+                                method: "POST",
+                                body: formData,
+                            });
+                            if (!res.ok) throw new Error(await res.text());
+                        }catch(error){
+                            newMsgBox.push({
+                                Title: "Error Terjadi",
+                                Message: (error as Error).message,
+                                NotificationType: "danger",
+                                ButtonType: 'ok',
+                                Action: () => {
+                                    deleteArray(newMsgBox, 'Error Terjadi');
+                                }
+                            });
+                        }
+                        error = true;
+                    };
+                    anyThing = undefined!;
                     deleteArray(newMsgBox, "Loading");
                     deleteArray(newMsgBox, "Perhatian");
                 }
@@ -742,22 +836,35 @@
                 <input type="checkbox" name="berat" id="" bind:this={bindThisInput}>
                 <label for="masalah">Masalah: </label>
                 <textarea name="masalah" id="" rows="4" cols="50" required ></textarea>
-                <label for="foto">Foto Masalah:</label>
-                <input type="file" id="foto" name="foto" accept="image/*" capture="environment"  required />           
-            
+                <img src={anyThing} alt="" />
+                <input 
+                onchange={
+                    ({currentTarget})=>{
+                        if(currentTarget.files){
+                            submiting = false;
+                            const reader = new FileReader(); 
+                            reader.onload = function(event) {
+                                anyThing = event.target?.result;
+                            }
+                            reader.readAsDataURL(currentTarget.files[0]);
+                        } 
+                    }
+                }
+                type="file" disabled={submiting} bind:this={bindThisInput2} id="foto" name="foto" accept="image/*" capture="environment"  required />           
                 <input type="hidden" name="unit_id" value={editId}>
+                <input type="hidden" name="pic1Id" bind:this={bindThisInput3}>
                 <input type="hidden" name="accountType" value={data?.userNow.accountType}>
                 <button disabled={submiting} type="button" class="flex w-full h-fit bg-gradient-to-b from-green-500 via-green-600 to-green-700 justify-center items-center text-center text-2xl rounded-2xl font-sans"
-                onclick={() => {
+                onclick={async() => {
                     if(bindThisInput?.checked){
                         newMsgBox.push({
                             Title: "Perhatian",
                             Message: `Akan kami tutup unit ${editName} ini! Jika didalamnya ada kustomer maka akan kami usir paksa kostumernya dari unit tersebut!, Apakah anda ingin melanjutkan?.`,
                             NotificationType: "warning",
                             ButtonType: 'yesno',
-                            Action: (result: any) => {
+                            Action: async (result: any) => {
                                 if(result === "yes"){
-                                    bindThisSubmit?.click();
+                                    await upload();
                                     return;
                                 }else if(result === "no"){
                                     deleteArray(newMsgBox, "Perhatian");
@@ -767,7 +874,7 @@
                         })
                         return;
                     }
-                    bindThisSubmit?.click();
+                    await upload();
                 }}> SUBMIT </button>
                 <button type="submit" class="hidden" bind:this={bindThisSubmit}>submit</button>
             </form>
@@ -911,7 +1018,30 @@
                                     deleteArray(newMsgBox, "Berhasil");
                                 }
                             });
-                        }else error = true;
+                        }else{
+                            const formData = new FormData();
+                            formData.set('img1', picId1);
+                            formData.set('once', "1");
+                            try {
+                                const res = await fetch("/api/delete_pic", {
+                                    method: "POST",
+                                    body: formData,
+                                });
+                                if (!res.ok) throw new Error(await res.text());
+                            }catch(error){
+                                newMsgBox.push({
+                                    Title: "Error Terjadi",
+                                    Message: (error as Error).message,
+                                    NotificationType: "danger",
+                                    ButtonType: 'ok',
+                                    Action: () => {
+                                        deleteArray(newMsgBox, 'Error Terjadi');
+                                    }
+                                });
+                            }
+                            error = true;
+                        };
+                        anyThing = undefined!;
                         deleteArray(newMsgBox, "Loading");
                     }
                 }
@@ -923,12 +1053,31 @@
             <input type="text" name="jabatan" value={accountTypeMap[data?.userNow.accountType] || 'Tidak Dikenali'} id="" required readonly>
             <label for="jam">Jam: </label>
             <input type="text" name="jam" id="" value={(formatTime(hours)+":"+formatTime(minutes))} required readonly>
-            <label for="foto">Foto Absensi:</label>
-            <input type="file" id="foto" name="foto" accept="image/*" capture="user"  required />           
+            <img src={anyThing} alt="" />
+            <input 
+            onchange={
+                ({currentTarget})=>{
+                    if(currentTarget.files){
+                        submiting = false;
+                        const reader = new FileReader(); 
+                        reader.onload = function(event) {
+                            anyThing = event.target?.result;
+                        }
+                        reader.readAsDataURL(currentTarget.files[0]);
+                    } 
+                }
+            }
+            bind:this={bindThisInput2} disabled={submiting} type="file" id="foto" name="foto" accept="image/*" capture="user"  required />           
         
             <input type="hidden" name="unit_id" value={editId}>
             <input type="hidden" name="accountType" value={data?.userNow.accountType}>
-            <button disabled={submiting} type="submit" class="flex w-full h-fit bg-gradient-to-b from-green-500 via-green-600 to-green-700 justify-center items-center text-center text-2xl rounded-2xl font-sans"> SUBMIT </button>
+            <input type="hidden" name="pic1Id" bind:this={bindThisInput3}>
+            <button 
+            onclick={async () => {
+                await upload();
+            }}
+            disabled={submiting} type="button" class="flex w-full h-fit bg-gradient-to-b from-green-500 via-green-600 to-green-700 justify-center items-center text-center text-2xl rounded-2xl font-sans"> SUBMIT </button>
+            <button type="submit" class="hidden" aria-label='i' bind:this={bindThisSubmit}></button>
         </form>
     {:else if lihatAbsen}
         <div class=" flex-grow bg-slate-900 rounded-2xl p-3 space-y-3 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-900">

@@ -68,15 +68,13 @@ export const actions: Actions = {
         const formData: FormData = await event.request.formData();
         const nama: string = formData.get("name")?.toString() ?? '';
         const jabatan: string = formData.get("accountType")?.toString() ?? '';
-        const gambarRuangan: File = (formData.get("foto") as File);
-        const gambarKamarMandi: File = (formData.get("foto2") as File);
+        const gambarRuangan: string = (formData.get("pic1Id")?.toString() ?? '');
+        const gambarKamarMandi: string = (formData.get("pic2Id")?.toString() ?? '');
         const unitId: string = formData.get("unit_id")?.toString() ?? '';
         const kebersihanId: string | undefined = formData.get("kebersihanId")?.toString();
         try {
-            const RgambarRuangan = await CREATE(gambarRuangan);
-            const RgambarKamarMandi = await CREATE(gambarKamarMandi);
             //CHECK IF RESULT UPLOAD IS THERE
-            if(!RgambarRuangan && !RgambarKamarMandi){
+            if(gambarRuangan == '' && gambarKamarMandi == ''){
                 return fail(422, {
                     success: false,
                     message: "Upload Foto Masalah gagal",
@@ -89,8 +87,8 @@ export const actions: Actions = {
                     const kebersihan_return = await db.insert(kebersihan).values({
                         name: nama,
                         accountType: toAccountType(jabatan) ?? 'HK',
-                        gambarRuangan: RgambarRuangan?.public_id ?? '',
-                        gambarKamarMandi: RgambarKamarMandi?.public_id ?? '',
+                        gambarRuangan: gambarRuangan,
+                        gambarKamarMandi: gambarKamarMandi,
                         approve: null,
                     }).returning({id: kebersihan.id});
                     await db.update(units).set({kebersihan: kebersihan_return[0].id, pending: true}).where(eq(units.id, unitId));
@@ -101,8 +99,8 @@ export const actions: Actions = {
                     }
                 }
                 await db.update(kebersihan).set({
-                    gambarRuangan: RgambarRuangan?.public_id,
-                    gambarKamarMandi: RgambarKamarMandi?.public_id,
+                    gambarRuangan: gambarRuangan,
+                    gambarKamarMandi: gambarKamarMandi,
                     when: new Date()
                 }).where(eq(kebersihan.id, kebersihanId));
                 await db.update(units).set({pending: true}).where(eq(units.id, unitId));
@@ -122,7 +120,6 @@ export const actions: Actions = {
 		}
     },
     absen: async (event) => {
-        console.log("Apa yang terjadi dengan dirimu");
         const formData: FormData = await event.request.formData();
         const nama: string = formData.get('name')?.toString() ?? '';
         const jabatan: "FO" | "HK" | "T" | "H"  = toAccountType(formData.get("accountType")?.toString() ?? '') ?? 'HK';

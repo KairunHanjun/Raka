@@ -82,19 +82,13 @@ export const actions: Actions = {
             const kebersihanId: string = fromData.get('kebersihanId')?.toString() ?? '';
             const approve: boolean = ((fromData.get('approve')?.toString() ?? '') == "Terima") ? true : false;
             try {
-                if(approve){
-                    const customers_get = await db
-                    .select()
-                    .from(customers)
-                    .where(eq(customers.unitId, unitId))
-                    .orderBy(desc(customers.fromTime))
-                    .limit(1);
+                if(approve){                    
                     await db.update(units).set({
                         kebersihan: null,
                         pending: false,
-                        unitState: 'Working',
-                        fromTime: new Date(customers_get[0].fromTime),
-                        toTime: new Date(customers_get[0].toTime),
+                        unitState: 'Ready',
+                        fromTime: null,
+                        toTime: null,
                     }).where(eq(units.id, unitId));
                     await db.delete(kebersihan).where(eq(kebersihan.id, kebersihanId));
                 }else{
@@ -132,13 +126,13 @@ export const actions: Actions = {
         const [agent_id, agent_host]: string[] = (formData.get("agent")?.toString() ?? '|').split("|");
         const price: number = +(formData.get("price")?.toString() ?? '0');
         const komisi: number = +(formData.get("komisi")?.toString() ?? '0');
-        const fotoKtp: File = (formData.get("ktp") as File);
+        const fotoKtp: string = (formData.get("pic1Id")?.toString() ?? '');
         const unit_id: string = (formData.get("unit_id")?.toString() ?? '');
         
         try {
-            const result_upload = await CREATE(fotoKtp);
+            
             //CHECK IF RESULT UPLOAD IS THERE
-            if(!result_upload){
+            if(fotoKtp == ''){
                 return fail(422, {
                     success: false,
                     message: "Upload KTP gagal",
@@ -177,7 +171,7 @@ export const actions: Actions = {
                     fromTime: formatDateLocal(fromDate),
                     toTime: formatDateLocal(toDate),
                     price: price,
-                    fotoKTP: result_upload.public_id,
+                    fotoKTP: fotoKtp,
                     durationDays: durationDays,
                     komisi: komisi
                 });
@@ -309,13 +303,12 @@ export const actions: Actions = {
         const jamBerapa: string = formData.get("jam")?.toString() ?? '';
         const [toHour, toMin] = jamBerapa.split(":").map(Number);
         const trullyJamBerapa: Date = new Date((new Date()).setHours(toHour, toMin, 0, 0));
-        const fotoAbsensi: File = (formData.get("foto") as File);
+        const fotoAbsensi: string = (formData.get("pic1Id")?.toString() ?? '');
         //const unitId: string = formData.get("unit_id")?.toString() ?? '';
 
         try {
-            const result_upload = await CREATE(fotoAbsensi);
             //CHECK IF RESULT UPLOAD IS THERE
-            if(!result_upload){
+            if(fotoAbsensi == ''){
                 return fail(422, {
                     success: false,
                     message: "Upload Foto Masalah gagal",
@@ -328,7 +321,7 @@ export const actions: Actions = {
                     name: nama,
                     accountType: jabatan,
                     whenEntry: trullyJamBerapa,
-                    fotoUrl: result_upload.public_id
+                    fotoUrl: fotoAbsensi
                     
                 });
             }
@@ -356,12 +349,11 @@ export const actions: Actions = {
         const trullyJamBerapa: Date = new Date((new Date()).setHours(toHour, toMin, 0, 0));
         const desc: string = formData.get("masalah")?.toString()  ?? '';
         const berat: boolean = (formData.get("berat") as unknown as boolean);
-        const fotoMasalah: File = (formData.get("foto") as File);
+        const fotoMasalah: string = (formData.get("pic1Id")?.toString() ?? '');
         const unitId: string = formData.get("unit_id")?.toString() ?? '';
         try {
-            const result_upload = await CREATE(fotoMasalah);
             //CHECK IF RESULT UPLOAD IS THERE
-            if(!result_upload){
+            if(fotoMasalah == ''){
                 return fail(422, {
                     success: false,
                     message: "Upload Foto Masalah gagal",
@@ -374,7 +366,7 @@ export const actions: Actions = {
                     unitId: unitId,
                     name: nama,
                     accountType: toAccountType(jabatan) ?? 'FO',
-                    imageUrl: result_upload.public_id,
+                    imageUrl: fotoMasalah,
                     desc: desc,
                     when: trullyJamBerapa,
                     berat: berat

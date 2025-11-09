@@ -204,7 +204,6 @@
 {/if}
 
 {#if ((form?.error) || (data?.error))}
-    {error = true}
     {#if error}
         <MessageBox title="Masalah Terjadi!" type="warning" buttonType="ok" handleResult={() => {
             error = false;
@@ -384,8 +383,8 @@
                             <label for="jam">Jam: </label>
                             <input class="text-black!" type="text" name="jam" id="" value={(formatTime(hours)+":"+formatTime(minutes))} required readonly>
 
-                            <img src={anyThing} alt="Foto Selesai Perbaikan Akan Ditampilkan Disini" />
-                            <input type="file" id="foto" name="foto" accept="image/*" capture="environment" bind:this={bindThisInput} 
+                            <img src={anyThing} alt="" />
+                            <input type="file" id="foto" name="foto" accept="image/*" bind:this={bindThisInput} 
                                 onchange={() => {
                                     if(bindThisInput?.files){
                                         const reader = new FileReader(); 
@@ -400,6 +399,8 @@
                             <input type="hidden" name="unit_id" value={editId}>
                             <input type="hidden" name="masalah_id" value={dataMasalahTerkini[0]}>
                             <input type="hidden" name="accountType" value={data?.userNow.accountType}>
+                            <!-- <input type="hidden" name="pic1Id" bind:value={pic1Id}>
+                            <input type="hidden" name="pic2Id" bind:value={pic2Id}> -->
 
                             <button disabled={submiting} type="button" class="flex w-full h-fit bg-gradient-to-b from-green-500 via-green-600 to-green-700 justify-center items-center text-center text-2xl rounded-2xl font-sans"
                             onclick={() => {

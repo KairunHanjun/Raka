@@ -9,6 +9,7 @@
 	import { onMount } from "svelte";
     import type { PageProps } from "./$types";
 	import { browser } from "$app/environment";
+	import { compressImage } from "$lib";
     let { data, form }: PageProps = $props();
 
     const editOther: string[] = $state([]);
@@ -133,6 +134,9 @@
     let menuClick: string | undefined = $state(undefined);
     let bindThisSelect: HTMLSelectElement | undefined = $state(undefined);
     let bindThisInput: HTMLInputElement | undefined = $state(undefined);
+    let bindThisInput2: HTMLInputElement | undefined = $state(undefined);
+    let bindThisInput3: HTMLInputElement | undefined = $state(undefined);
+    let bindThisInput4: HTMLInputElement | undefined = $state(undefined);
     let bindThisSubmit: HTMLButtonElement | undefined = $state(undefined);
     let now: Date = $state(new Date());
     let hours = $derived(now.getHours());
@@ -144,6 +148,9 @@
     let lihatAbsen: boolean = $state(false);
     let editApprove: string | undefined = $state(undefined);
     let isOnline: boolean = $state(true);
+    let bindThisForm: HTMLFormElement | undefined = $state(undefined);
+    let picId1: string = $state('');
+    let picId2: string = $state('');
 
     $effect(() => {
         const timer = setInterval(() => {
@@ -337,15 +344,7 @@
             <h1 class=" text-2xl font-bold">{editName}</h1>
         </div>
         {#if !editOther[1]}
-            <form onsubmit={async () => {
-                    submiting=true;
-                    newMsgBox.push({
-                        Title: "Loading",
-                        Message: "Harap Tunggu",
-                        NotificationType: "info",
-                        Action: () => {}
-                    });
-                }} action="?/keep" method="post" class="flex flex-col w-full h-fit gap-2" enctype="multipart/form-data" use:enhance={() => {
+            <form bind:this={bindThisForm} action="?/keep" method="post" class="flex flex-col w-full h-fit gap-2" enctype="multipart/form-data" use:enhance={() => {
                     return async ({update}) => {
                         submiting = false;
                         await update();
@@ -363,7 +362,29 @@
                                     deleteArray(newMsgBox, "Berhasil");
                                 }
                             });
-                        }else error = true;
+                        }else{
+                            const formData = new FormData();
+                            formData.set('img1', picId1);
+                            formData.set('img2', picId2);
+                            try {
+                                const res = await fetch("/api/delete_pic", {
+                                    method: "POST",
+                                    body: formData,
+                                });
+                                if (!res.ok) throw new Error(await res.text());
+                            }catch(error){
+                                newMsgBox.push({
+                                    Title: "Error Terjadi",
+                                    Message: (error as Error).message,
+                                    NotificationType: "danger",
+                                    ButtonType: 'ok',
+                                    Action: () => {
+                                        deleteArray(newMsgBox, 'Error Terjadi');
+                                    }
+                                });
+                            }
+                            error = true;
+                        };
                         deleteArray(newMsgBox, "Loading");
                     }
                 }}>
@@ -378,16 +399,59 @@
                     <input type="text" name="kebersihanId" readonly>
                 {/if}
                 <label for="foto">Foto Ruangan:</label>
-                <input type="file" id="foto" name="foto" accept="image/*" capture="environment"  required />           
+                <input bind:this={bindThisInput} disabled={submiting} type="file" id="foto" name="foto" accept="image/*" capture="environment" required />           
                 <label for="foto2">Foto Kamar Mandi:</label>
-                <input type="file" id="foto" name="foto2" accept="image/*" capture="environment"  required /> 
+                <input bind:this={bindThisInput2} disabled={submiting} type="file" id="foto" name="foto2" accept="image/*" capture="environment"  required /> 
 
                 <input type="hidden" name="unit_id" value={editId}>
                 <input type="hidden" name="accountType" value={data?.userNow.accountType}>
+                <input type="hidden" name="pic1Id" bind:this={bindThisInput3}>
+                <input type="hidden" name="pic2Id" bind:this={bindThisInput4}>
 
                 <button disabled={submiting} type="button" class="flex w-full h-fit bg-gradient-to-b from-green-500 via-green-600 to-green-700 justify-center items-center text-center text-2xl rounded-2xl font-sans"
-                onclick={() => {
-                    bindThisSubmit?.click();
+                onclick={async () => {
+                    if(bindThisForm){
+                        if(bindThisInput?.files && bindThisInput2?.files){
+                            submiting=true;
+                            newMsgBox.push({
+                                Title: "Loading",
+                                Message: "Harap Tunggu",
+                                NotificationType: "info",
+                                Action: () => {}
+                            });
+                            const compressedImage1 = await compressImage(bindThisInput?.files[0], 2);
+                            const compressedImage2 = await compressImage(bindThisInput?.files[0], 2);
+                            const formData = new FormData();
+                            formData.set('img1', compressedImage1);
+                            formData.set('img2', compressedImage2);
+                            try {
+                                const res = await fetch("/api/upload_pic", {
+                                    method: "POST",
+                                    body: formData,
+                                });
+                                if (!res.ok) throw new Error(await res.text());
+                                res.text().then(responseText => {
+                                    if(bindThisInput3 && bindThisInput4){
+                                        [picId1, picId2] = responseText.split('|');
+                                        bindThisInput3.value = picId1;
+                                        bindThisInput4.value = picId2;
+                                        bindThisSubmit?.click();
+                                    }
+                                });
+                            } catch (error) {
+                                deleteArray(newMsgBox, 'Loading');
+                                newMsgBox.push({
+                                    Title: "Error Terjadi",
+                                    Message: (error as Error).message,
+                                    NotificationType: "danger",
+                                    ButtonType: 'ok',
+                                    Action: () => {
+                                        deleteArray(newMsgBox, 'Error Terjadi');
+                                    }
+                                });
+                            }
+                        }
+                    }
                 }}> SUBMIT </button>
                 <button type="submit" class="hidden" bind:this={bindThisSubmit}>submit</button>
             </form>
