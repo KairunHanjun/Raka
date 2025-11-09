@@ -352,7 +352,7 @@
                                     NotificationType: "info",
                                     Action: () => {}
                                 });
-                            }} action="?/repairman" method="post" class="flex flex-col w-full h-fit gap-2" enctype="multipart/form-data" use:enhance={() => {
+                            }} action="?/repairman" method="post" class="flex flex-col w-full h-fit gap-2 text-white" enctype="multipart/form-data" use:enhance={() => {
                                 return async ({update}) => {
                                     submiting = false;
                                     await update();
@@ -378,11 +378,11 @@
                             }}>
                             <p class=" text-blue-600 font-bold text-3xl mt-2 pt-2">Opsi Teknisi</p>
                             <label for="name">Nama Staff: </label>
-                            <input type="text" name="name" id="name" value={data?.userNow.username} required readonly>
+                            <input class="text-black!" type="text" name="name" id="name" value={data?.userNow.username} required readonly>
                             <label for="jabatan">Jabatan: </label>
-                            <input type="text" name="jabatan" value={accountTypeMap[data?.userNow.accountType] || 'Tidak Dikenali'} id="" required readonly>
+                            <input class="text-black!" type="text" name="jabatan" value={accountTypeMap[data?.userNow.accountType] || 'Tidak Dikenali'} id="" required readonly>
                             <label for="jam">Jam: </label>
-                            <input type="text" name="jam" id="" value={(formatTime(hours)+":"+formatTime(minutes))} required readonly>
+                            <input class="text-black!" type="text" name="jam" id="" value={(formatTime(hours)+":"+formatTime(minutes))} required readonly>
 
                             <img src={anyThing} alt="Foto Selesai Perbaikan Akan Ditampilkan Disini" />
                             <input type="file" id="foto" name="foto" accept="image/*" capture="environment" bind:this={bindThisInput} 
@@ -466,50 +466,49 @@
     }}>
     {#if !edit && !lihatAbsen}
         <div class=" flex flex-col justify-center items-center text-center flex-grow w-full h-fit bg-slate-900 rounded-2xl p-3 space-y-3 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-900">
-                {#each data?.dataAbsensi as absen}
-                    <button class="
-                        justify-center items-center text-center
-                        flex w-fit h-fit text-white flex-col text-3xl font-bold p-5 rounded-2xl
-                        bg-gradient-to-b from-green-500 via-green-600 to-green-700 
-                        shadow-md hover:shadow-lg
-                        active:translate-y-0.5
-                        transition-all duration-200 ease-in-out
-                        focus:outline-none focus:ring-4 focus:ring-blue-400
-                        "
-                        onclick={() => {
-                            editId = absen.id;
-                            editName = absen.name;
-                            editOther.push(absen.fotoUrl);
-                            editOther.push(absen.whenEntry.toString());
-                            editOther.push(accountTypeMap[absen.accountType] || 'Tidak Dikenali');
-                            lihatAbsen = true;
-                        }}
-                        aria-label="i"
-                    >
-
-                        <p class="text-center font-bold text-[1rem] text-white">{absen.name.toUpperCase()}</p>
-                        <p class="text-center text-[15px] text-white">{accountTypeMap[absen.accountType] || 'Tidak Dikenali'}</p>
-                        <p class="text-center text-[15px] text-white">{absen.whenEntry.toLocaleDateString()} {absen.whenEntry.toLocaleTimeString()}</p>
-                    </button>
-                {/each}
-            </div>
-            {#if !(data?.dataAbsensi?.some(data => data.whenEntry.toDateString() === (new Date()).toDateString())) || (data?.dataAbsensi.length == 0)}
-                <button
-                    class="
-                    w-full text-white text-3xl font-bold p-5 rounded-2xl
-                    bg-gradient-to-b from-blue-500 to-blue-700
+            {#each data?.dataAbsensi?.filter(data => data.whenEntry.getDate() === (new Date()).getDate()) as absen}
+                <button class="
+                    justify-center items-center text-center
+                    flex w-fit h-fit text-white flex-col text-3xl font-bold p-5 rounded-2xl
+                    bg-gradient-to-b from-green-500 via-green-600 to-green-700 
                     shadow-md hover:shadow-lg
                     active:translate-y-0.5
                     transition-all duration-200 ease-in-out
                     focus:outline-none focus:ring-4 focus:ring-blue-400
                     "
                     onclick={() => {
-                        edit = true;
+                        editId = absen.id;
+                        editName = absen.name;
+                        editOther.push(absen.fotoUrl);
+                        editOther.push(absen.whenEntry.toString());
+                        editOther.push(accountTypeMap[absen.accountType] || 'Tidak Dikenali');
+                        lihatAbsen = true;
                     }}
+                    aria-label="i"
                 >
-                    Input Absensi
+                    <p class="text-center font-bold text-[1rem] text-white">{absen.name.toUpperCase()}</p>
+                    <p class="text-center text-[15px] text-white">{accountTypeMap[absen.accountType] || 'Tidak Dikenali'}</p>
+                    <p class="text-center text-[15px] text-white">{absen.whenEntry.toLocaleDateString()} {absen.whenEntry.toLocaleTimeString()}</p>
                 </button>
-            {/if}
+            {/each}
+        </div>
+        {#if (data?.dataAbsensi?.filter(data => data.whenEntry.getDate() === (new Date()).getDate()))?.length != 2 || (data?.dataAbsensi?.length == 0)}
+            <button
+                class="
+                w-full text-white text-3xl font-bold p-5 rounded-2xl
+                bg-gradient-to-b from-blue-500 to-blue-700
+                shadow-md hover:shadow-lg
+                active:translate-y-0.5
+                transition-all duration-200 ease-in-out
+                focus:outline-none focus:ring-4 focus:ring-blue-400
+                "
+                onclick={() => {
+                    edit = true;
+                }}
+            >
+                Input Absensi
+            </button>
+        {/if}
         {:else if edit}
             <form 
                 onsubmit={async () => {

@@ -469,6 +469,21 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
 			})
 	);
 
+    let filteredAbsensi2 = $derived(
+		(data?.dataAbsensi ?? []).filter((item) => {
+				const date = item.when;
+				return (
+                    date.getDate() === Number((new Date()).getDate()) &&
+					getYearFromDate(date) === Number((new Date()).getFullYear()) &&
+					getMonthFromDate(date) === Number((new Date()).getMonth())
+				);
+			}).map((item) => {
+				return {
+					...item
+				};
+			})
+	);
+
     async function exportToExcel(fetchWhat: 'units_excel' | 'masalah_excel' | 'absensi_excel' | '') {
         let filename = '';
         let data: {
@@ -1529,31 +1544,93 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
         <ListingComp editable={false} items={[]} ifItems={false} ifOther={true} title="Absensi" selectedItemsID={0} itemEdit={false} >
             {#if !lihatAbsensi2}
                 <div class=" flex flex-col justify-center items-center text-center flex-grow w-full h-fit bg-slate-900 rounded-2xl p-3 space-y-3 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-900">
-                    <!-- TODO: Replace shit -->
-                    {#each data?.dataAbsensi as absen}
-                        <button class="
-                            justify-center items-center text-center
-                            flex w-fit h-fit text-white flex-col text-3xl font-bold p-5 rounded-2xl
-                            bg-gradient-to-b from-green-500 via-green-600 to-green-700 
-                            shadow-md hover:shadow-lg
-                            active:translate-y-0.5
-                            transition-all duration-200 ease-in-out
-                            focus:outline-none focus:ring-4 focus:ring-blue-400
-                            "
-                            onclick={() => {
-                                edit.push(absen.id);
-                                edit.push(absen.name);
-                                edit.push(absen.fotoUrl);
-                                edit.push(absen.when.toString());
-                                edit.push(accountTypeMap[absen.accountType] || 'Tidak Dikenali')
-                                lihatAbsensi2 = true;
-                            }}
-                            aria-label="i"
-                        >
-                            <p class="text-center font-bold text-[1rem] text-white">{absen.name.toUpperCase()}</p>
-                            <p class="text-center text-[15px] text-white">{accountTypeMap[absen.accountType] || 'Tidak Dikenali'}</p>
-                            <p class="text-center text-[15px] text-white">{absen.when.toLocaleDateString()} {absen.when.toLocaleTimeString()}</p>
-                        </button>
+                    <p class=" text-white text-2xl font-bold">Front Office Absensi</p>
+                    {#each filteredAbsensi2 as absen}
+                        {#if absen.accountType === 'FO'}
+                            <button class="
+                                justify-center items-center text-center
+                                flex w-fit h-fit text-white flex-col text-3xl font-bold p-5 rounded-2xl
+                                bg-gradient-to-b from-green-500 via-green-600 to-green-700 
+                                shadow-md hover:shadow-lg
+                                active:translate-y-0.5
+                                transition-all duration-200 ease-in-out
+                                focus:outline-none focus:ring-4 focus:ring-blue-400
+                                "
+                                onclick={() => {
+                                    edit.push(absen.id);
+                                    edit.push(absen.name);
+                                    edit.push(absen.fotoUrl);
+                                    edit.push(absen.when.toString());
+                                    edit.push(accountTypeMap[absen.accountType] || 'Tidak Dikenali')
+                                    lihatAbsensi2 = true;
+                                }}
+                                aria-label="i"
+                            >
+                                <p class="text-center font-bold text-[1rem] text-white">{absen.name.toUpperCase()}</p>
+                                <p class="text-center text-[15px] text-white">{accountTypeMap[absen.accountType] || 'Tidak Dikenali'}</p>
+                                <p class="text-center text-[15px] text-white">{absen.when.toLocaleDateString()} {absen.when.toLocaleTimeString()}</p>
+                            </button>
+                        {/if}
+                    {/each}
+                </div>          
+                <div class=" flex flex-col justify-center items-center text-center flex-grow w-full h-fit bg-slate-900 rounded-2xl p-3 space-y-3 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-900">
+                    <p class=" text-white text-2xl font-bold">House Keeping Absensi</p>
+                    {#each filteredAbsensi2 as absen}
+                        {#if absen.accountType === 'HK'}
+                            <button class="
+                                justify-center items-center text-center
+                                flex w-fit h-fit text-white flex-col text-3xl font-bold p-5 rounded-2xl
+                                bg-gradient-to-b from-green-500 via-green-600 to-green-700 
+                                shadow-md hover:shadow-lg
+                                active:translate-y-0.5
+                                transition-all duration-200 ease-in-out
+                                focus:outline-none focus:ring-4 focus:ring-blue-400
+                                "
+                                onclick={() => {
+                                    edit.push(absen.id);
+                                    edit.push(absen.name);
+                                    edit.push(absen.fotoUrl);
+                                    edit.push(absen.when.toString());
+                                    edit.push(accountTypeMap[absen.accountType] || 'Tidak Dikenali')
+                                    lihatAbsensi2 = true;
+                                }}
+                                aria-label="i"
+                            >
+                                <p class="text-center font-bold text-[1rem] text-white">{absen.name.toUpperCase()}</p>
+                                <p class="text-center text-[15px] text-white">{accountTypeMap[absen.accountType] || 'Tidak Dikenali'}</p>
+                                <p class="text-center text-[15px] text-white">{absen.when.toLocaleDateString()} {absen.when.toLocaleTimeString()}</p>
+                            </button>
+                        {/if}
+                    {/each}
+                </div>
+                <div class=" flex flex-col justify-center items-center text-center flex-grow w-full h-fit bg-slate-900 rounded-2xl p-3 space-y-3 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-900">
+                    <p class=" text-white text-2xl font-bold">Teknisi Absensi</p>
+                    {#each filteredAbsensi2 as absen}
+                        {#if absen.accountType === 'T'}
+                            <button class="
+                                justify-center items-center text-center
+                                flex w-fit h-fit text-white flex-col text-3xl font-bold p-5 rounded-2xl
+                                bg-gradient-to-b from-green-500 via-green-600 to-green-700 
+                                shadow-md hover:shadow-lg
+                                active:translate-y-0.5
+                                transition-all duration-200 ease-in-out
+                                focus:outline-none focus:ring-4 focus:ring-blue-400
+                                "
+                                onclick={() => {
+                                    edit.push(absen.id);
+                                    edit.push(absen.name);
+                                    edit.push(absen.fotoUrl);
+                                    edit.push(absen.when.toString());
+                                    edit.push(accountTypeMap[absen.accountType] || 'Tidak Dikenali')
+                                    lihatAbsensi2 = true;
+                                }}
+                                aria-label="i"
+                            >
+                                <p class="text-center font-bold text-[1rem] text-white">{absen.name.toUpperCase()}</p>
+                                <p class="text-center text-[15px] text-white">{accountTypeMap[absen.accountType] || 'Tidak Dikenali'}</p>
+                                <p class="text-center text-[15px] text-white">{absen.when.toLocaleDateString()} {absen.when.toLocaleTimeString()}</p>
+                            </button>
+                        {/if}
                     {/each}
                 </div>
             {:else}

@@ -620,7 +620,7 @@
     }}>
     {#if !edit && !lihatAbsen}
         <div class=" flex flex-col justify-center items-center text-center flex-grow w-full h-fit bg-slate-900 rounded-2xl p-3 space-y-3 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-900">
-            {#each data?.dataAbsensi as absen}
+            {#each data?.dataAbsensi?.filter(data => data.whenEntry.getDate() === (new Date()).getDate()) as absen}
                 <button class="
                     justify-center items-center text-center
                     flex w-fit h-fit text-white flex-col text-3xl font-bold p-5 rounded-2xl
@@ -640,14 +640,13 @@
                     }}
                     aria-label="i"
                 >
-
                     <p class="text-center font-bold text-[1rem] text-white">{absen.name.toUpperCase()}</p>
                     <p class="text-center text-[15px] text-white">{accountTypeMap[absen.accountType] || 'Tidak Dikenali'}</p>
                     <p class="text-center text-[15px] text-white">{absen.whenEntry.toLocaleDateString()} {absen.whenEntry.toLocaleTimeString()}</p>
                 </button>
             {/each}
         </div>
-        {#if !(data?.dataAbsensi?.some(data => data.whenEntry.toDateString() === (new Date()).toDateString())) || (data?.dataAbsensi.length == 0)}
+        {#if (data?.dataAbsensi?.filter(data => data.whenEntry.getDate() === (new Date()).getDate()))?.length != 2 || (data?.dataAbsensi?.length == 0)}
             <button
                 class="
                 w-full text-white text-3xl font-bold p-5 rounded-2xl
