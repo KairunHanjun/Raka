@@ -57,7 +57,7 @@ export const load: PageServerLoad = async ({ locals }) => {
         .innerJoin(kebersihan, eq(units.kebersihan, kebersihan.id))
         .innerJoin(accounts, eq(kebersihan.name, accounts.username))
         .where(and(eq(accounts.createdByWho, units.createdByWho)));
-        
+        console.log(dataCustomers);
         return {
             dataUnits,
             dataAgents,

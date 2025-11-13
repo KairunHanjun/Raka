@@ -14,8 +14,7 @@ export const checkUnitsMiddleware: Handle = async ({ event, resolve }) => {
 			try{
 				const expiredUnits = await db.select()
 				.from(units)
-				.where(lt(units.toTime, sql`CURRENT_TIME`));
-
+				.where(lt(units.toTime, sql`NOW()`));
 			for (const u of expiredUnits) {
 				await db.update(units)
 					.set({ unitState: 'StandBy' })

@@ -129,6 +129,7 @@
         if(data){
             emptiedArray(Items);
             emptiedArray(rooms);
+            console.log(data?.dataCustomers);
             data.dataUnits?.forEach(data => {
                 Items.push({
                     id: data.id,
@@ -688,6 +689,7 @@
                         editName = unit.name;
                         editOther.push(unit.state);
                     }else if(unit.state === "Working"){
+                        console.log(rooms);
                         const costumerBersangkutan = data?.dataCustomers?.find(x => x.unitId === unit.id) ?? undefined;
                         if(!costumerBersangkutan){
                             newMsgBox.push({

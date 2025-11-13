@@ -13,7 +13,7 @@ export const POST = async ({ request }) => {
             if(!RgambarRuangan){
                 return new Response("Gambar gagal diupload", {status: 422})
             }
-            return new Response(`${RgambarRuangan.public_id}}`, {status: 200});
+            return new Response(`${RgambarRuangan.public_id}`, {status: 200});
         }else{
             const img1 = formData.get("img1");
             const img2 = formData.get("img2");
