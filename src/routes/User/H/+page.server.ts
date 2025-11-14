@@ -14,74 +14,78 @@ export const load: PageServerLoad = async ({ locals }) => {
 		throw redirect(302, '/');
 	}
 	try {
-		const dataAkun = await db.select({
-			id: accounts.id,
-			username: accounts.username,
-			accountType: accounts.accountType
-		}).from(accounts).where(and(ne(accounts.accountType, 'H'), eq(accounts.createdByWho, locals.user.username)));
-		//Get Unit
-		const dataUnits = await db.select().from(units).where(eq(units.createdByWho, locals.user.username)).orderBy(asc(units.unitState));
-		//Get Agent
-		const dataAgents = await db.select().from(agents).where(eq(agents.createdByWho, locals.user.username));
-		//Get Masalah
-		const dataMasalah = await db
-		.select({
-			id: masalah.id,
-			unitId: masalah.unitId,
-			desc: masalah.desc,
-			imageUrl: masalah.imageUrl,
-			when: masalah.when,
-			berat: masalah.berat,
-			done: masalah.done
-		})
-		.from(masalah)
-		.leftJoin(units, eq(masalah.unitId, units.id))
-		.innerJoin(accounts, eq(units.createdByWho, accounts.username))
-		.where(eq(accounts.createdByWho, locals.user.createdByWho));
-		//console.log(dataMasalah);
-		//Get Absensi
-		const dataAbsensi = await db
-		.select({
-			id: absensi.id,
-			name: absensi.name,
-			accountType: absensi.accountType,
-			when: absensi.whenEntry,
-			fotoUrl: absensi.fotoUrl
-		})
-		.from(absensi)
-		.innerJoin(accounts, eq(absensi.name, accounts.username))
-		.where(eq(accounts.createdByWho, locals.user.username));
-		//Get Kebersihan
-		const dataKebersihan = await db
-        .select({
-            id: kebersihan.id,
-            when: kebersihan.when,
-            imgRuang: kebersihan.gambarRuangan,
-            imgMandi: kebersihan.gambarKamarMandi,
-            approve: kebersihan.approve
-        })
-        .from(units)
-        .innerJoin(kebersihan, eq(units.kebersihan, kebersihan.id))
-        .innerJoin(accounts, eq(kebersihan.name, accounts.username))
-        .where(and(eq(accounts.createdByWho, units.createdByWho)));
+		const [
+			dataAkun,
+			dataUnits,
+			dataAgents,
+			dataKebersihan,
+			dataAbsensi,
+			dataMasalah,
+			dataCustomers,
+		] = await Promise.all([
+			db.select({
+				id: accounts.id,
+				username: accounts.username,
+				accountType: accounts.accountType
+			}).from(accounts).where(and(ne(accounts.accountType, 'H'), eq(accounts.createdByWho, locals.user.username))),
+			db.select().from(units).where(eq(units.createdByWho, locals.user.username)).orderBy(asc(units.unitState)),
+			db.select().from(agents).where(eq(agents.createdByWho, locals.user.username)),
+			db
+			.select({
+				id: masalah.id,
+				unitId: masalah.unitId,
+				desc: masalah.desc,
+				imageUrl: masalah.imageUrl,
+				when: masalah.when,
+				berat: masalah.berat,
+				done: masalah.done
+			})
+			.from(masalah)
+			.leftJoin(units, eq(masalah.unitId, units.id))
+			.innerJoin(accounts, eq(units.createdByWho, accounts.username))
+			.where(eq(accounts.createdByWho, locals.user.createdByWho)),
+			db
+			.select({
+				id: absensi.id,
+				name: absensi.name,
+				accountType: absensi.accountType,
+				when: absensi.whenEntry,
+				fotoUrl: absensi.fotoUrl
+			})
+			.from(absensi)
+			.innerJoin(accounts, eq(absensi.name, accounts.username))
+			.where(eq(accounts.createdByWho, locals.user.username)),
+			db
+			.select({
+				id: kebersihan.id,
+				when: kebersihan.when,
+				imgRuang: kebersihan.gambarRuangan,
+				imgMandi: kebersihan.gambarKamarMandi,
+				approve: kebersihan.approve
+			})
+			.from(units)
+			.innerJoin(kebersihan, eq(units.kebersihan, kebersihan.id))
+			.innerJoin(accounts, eq(kebersihan.name, accounts.username))
+			.where(and(eq(accounts.createdByWho, units.createdByWho))),
+			db
+			.select({
+				id: customers.idCostumers,
+				customersName: customers.customersName,
+				hostName: customers.hostName,
+				price: customers.price,
+				duration: customers.duration,
+				agents: agents.nameAgent,
+				fromTime: customers.fromTime,
+				toTime: customers.toTime,
+				commision: customers.komisi
+			})
+			.from(customers)
+			.innerJoin(accounts, eq(customers.hostName, accounts.username))
+			.innerJoin(agents, eq(agents.id, customers.agent))
+			.where(eq(accounts.createdByWho, locals.user.createdByWho)),
+
+		]);
 		const userNow = locals.user;
-		
-		const dataCustomers = await db
-				.select({
-					id: customers.idCostumers,
-					customersName: customers.customersName,
-					hostName: customers.hostName,
-					price: customers.price,
-					duration: customers.duration,
-					agents: agents.nameAgent,
-					fromTime: customers.fromTime,
-					toTime: customers.toTime,
-					commision: customers.komisi
-				})
-				.from(customers)
-				.innerJoin(accounts, eq(customers.hostName, accounts.username))
-				.innerJoin(agents, eq(agents.id, customers.agent))
-				.where(eq(accounts.createdByWho, locals.user.createdByWho));
 		return {
 			dataAkun,
 			dataUnits,

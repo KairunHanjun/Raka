@@ -17,10 +17,17 @@ export const load: PageServerLoad = async ({ locals }) => {
     }
 
     try{
-        const dataUnits = await db.select().from(units).where(eq(units.createdByWho, locals.user.createdByWho)).orderBy(asc(units.unitState));
-        const dataAgents = await db.select().from(agents).where(eq(agents.createdByWho, locals.user.createdByWho));
-        const dataAbsensi = await db.select().from(absensi).where(eq(absensi.name, locals.user.username));
-        const dataMasalah = await db
+        const [
+            dataUnits,
+            dataAgents,
+            dataAbsensi,
+            dataMasalah,
+        ] = await Promise.all(
+            [
+                db.select().from(units).where(eq(units.createdByWho, locals.user.createdByWho)).orderBy(asc(units.unitState)),
+                db.select().from(agents).where(eq(agents.createdByWho, locals.user.createdByWho)),
+                db.select().from(absensi).where(eq(absensi.name, locals.user.username)),
+                db
                 .select({
                     id: masalah.id,
                     unitId: masalah.unitId,
@@ -31,7 +38,10 @@ export const load: PageServerLoad = async ({ locals }) => {
                 .from(masalah)
                 .leftJoin(units, eq(masalah.unitId, units.id))
                 .innerJoin(accounts, eq(units.createdByWho, accounts.username))
-                .where(and(eq(accounts.createdByWho, locals.user.createdByWho), eq(masalah.done, false)));
+                .where(and(eq(accounts.createdByWho, locals.user.createdByWho), eq(masalah.done, false)))
+            ]
+
+        );
         return {
             dataUnits,
             dataAgents,

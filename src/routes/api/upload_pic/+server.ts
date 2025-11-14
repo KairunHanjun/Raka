@@ -6,7 +6,7 @@ export const POST = async ({ request }) => {
         const once = +(formData.get("once")?.toString() ?? "0");
         if(once == 1){
             const img1 = formData.get("img1");
-            if (!(img1 instanceof File)) 
+            if (!(img1 instanceof File) || !img1) 
                 return new Response("Tidak ada gambar yang masuk", { status: 400 });
             
             const RgambarRuangan = await CREATE((img1 as File));
@@ -17,7 +17,7 @@ export const POST = async ({ request }) => {
         }else{
             const img1 = formData.get("img1");
             const img2 = formData.get("img2");
-            if (!(img1 instanceof File) && !(img2 instanceof File)) 
+            if (!(img1 instanceof File) && !(img2 instanceof File) || !img1 || !img2) 
                 return new Response("Tidak ada gambar yang masuk", { status: 400 });
             
             const RgambarRuangan = await CREATE((img1 as File));

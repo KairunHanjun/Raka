@@ -1,37 +1,18 @@
-import { sql } from 'drizzle-orm';
-import { duration } from 'drizzle-orm/gel-core';
-import { text, pgTable, pgEnum, timestamp, integer, time, boolean } from 'drizzle-orm/pg-core';
+import { text, pgTable, pgEnum, timestamp, integer, boolean } from 'drizzle-orm/pg-core';
 import { v4 as uuidv4 } from 'uuid';
 
-/**
- * Defines the possible account types using a PostgreSQL enum.
- * Using an enum is better for data integrity than a plain text field.
- */
 export const accountTypeEnum = pgEnum('account_type', ['FO', 'HK', 'T', 'H']);
 
 export const unitState = pgEnum('unit_state', ['Ready', 'StandBy', 'Working', 'Closed']);
 
-/**
- * Defines the 'accounts' table schema using Drizzle ORM.
- */
 export const accounts = pgTable('accounts', {
-    // id: An auto-incrementing integer that serves as the primary key.
     id: text('id').primaryKey(),
-    // accountType: The type of the account, constrained by the values in accountTypeEnum.
-    // It defaults to 'user' if not specified.
     accountType: accountTypeEnum('account_type').notNull(),
-    // username: A unique, required text field for the user's login name.
     username: text('username').notNull().unique(),
-    // passwordHash: A required text field to store the user's hashed password.
-    // It's named 'passwordHash' to make it clear we should not store plain text passwords.
     passwordHash: text('password_hash').notNull(),
-    // email: A unique, required text field for the user's email address.
     email: text('email').notNull().unique(),
-    // phoneNumber: An optional text field for the user's phone number.
     phoneNumber: text('phone_number'),
-    // createdAt: A timestamp that automatically records when the account was created.
     createdAt: timestamp('created_at').defaultNow().notNull(),
-    // whoCreatedThis: This indcate explain who create the account
     createdByWho: text('created_by_who').notNull()
 });
 

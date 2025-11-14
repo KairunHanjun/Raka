@@ -220,8 +220,6 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                                     deleteArray(newMsgBoxBackUp, "Hapus "+ deleteWhat +"?");
                                     return;
                                 }
-                                await invalidateAll();
-                                refreshData();
                                 deleting = false;
                                 newMsgBoxBackUp.push({
                                     Title: "Berhasil",
@@ -229,8 +227,9 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                                     NotificationType: 'info',
                                     ButtonType: 'ok',
                                     Action: async () => {
-                                        await invalidateAll();
-                                        refreshData();
+                                        invalidateAll().then(() => {
+                                            refreshData();
+                                        });
                                         deleteArray(newMsgBoxBackUp, "Berhasil");
                                     }
                                 })
@@ -371,11 +370,12 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
 	});
 
     $effect(() => {
-		const interval = setInterval(async () => {
+		const interval = setInterval(() => {
 			if (navigator.onLine) {
 				try {
-					await invalidateAll();
-					refreshData();
+					invalidateAll().then(() => {
+                        refreshData();
+                    });
 				} catch (err) {}
 			} else {
 			}
@@ -671,8 +671,9 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                     pengaturanClick2();
                 }
             }
-            await invalidateAll();
-            refreshData();
+            invalidateAll().then(() => {
+                refreshData();
+            });
             editData = false;
         }
     }>
@@ -917,8 +918,9 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                                                             NotificationType: 'info',
                                                             ButtonType: 'ok',
                                                             Action: async () => {
-                                                                await invalidateAll();
-                                                                refreshData();
+                                                                invalidateAll().then(() => {
+                                                                    refreshData();
+                                                                });
                                                                 deleteArray(newMsgBoxBackUp, 'Error Terjadi');
                                                                 deleteArray(newMsgBoxBackUp, 'Berhasil');
                                                             }
@@ -996,8 +998,9 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                                                             NotificationType: 'info',
                                                             ButtonType: 'ok',
                                                             Action: async () => {
-                                                                await invalidateAll();
-                                                                refreshData();
+                                                                invalidateAll().then(() => {
+                                                                    refreshData();
+                                                                });
                                                                 deleteArray(newMsgBoxBackUp, 'Error Terjadi');
                                                                 deleteArray(newMsgBoxBackUp, 'Berhasil');
                                                             }
@@ -1075,8 +1078,9 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                                                             NotificationType: 'info',
                                                             ButtonType: 'ok',
                                                             Action: async () => {
-                                                                await invalidateAll();
-                                                                refreshData();
+                                                                invalidateAll().then(() => {
+                                                                    refreshData();
+                                                                });
                                                                 deleteArray(newMsgBoxBackUp, 'Error Terjadi');
                                                                 deleteArray(newMsgBoxBackUp, 'Berhasil');
                                                             }
@@ -1153,8 +1157,9 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                                     newMsgBox = undefined!;
                                 }
                             }
-                            await invalidateAll();
-                            refreshData();
+                            invalidateAll().then(() => {
+                                refreshData();
+                            });
                         }
                     }}>
                         <label for="Role">Role :</label>
@@ -1224,8 +1229,9 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                                     })
                                 }
                             }
-                            await invalidateAll();
-                            refreshData();
+                            invalidateAll().then(() => {
+                                refreshData();
+                            });
                         }
                     }}>
                         <label for="UnitName">Unit Name: </label>
@@ -1289,8 +1295,9 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                                     })
                                 }
                             }
-                            await invalidateAll();
-                            refreshData();
+                            invalidateAll().then(() => {
+                                refreshData();
+                            });
                         }
                     }}>
                         <label for="AgentName">Agent Name: </label>
@@ -1354,8 +1361,9 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                                 })
                             }
                         }
-                        await invalidateAll();
-                        refreshData();
+                        invalidateAll().then(() => {
+                            refreshData();
+                        });
                     }
                 }}>
                     
@@ -1647,7 +1655,8 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
     {/if}
 </div>
 
-<svelte:window on:focus={async () => {
-    await invalidateAll();
-    refreshData();
+<svelte:window on:focus={() => {
+    invalidateAll().then(() => {
+        refreshData();
+    });
 }} />

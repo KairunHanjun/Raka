@@ -147,11 +147,12 @@
     });
 
     $effect(() => {
-		const interval = setInterval(async () => {
+		const interval = setInterval(() => {
 			if (navigator.onLine) {
 				try {
-					await invalidateAll();
-					refreshData();
+					invalidateAll().then(() => {
+                        refreshData();
+                    });
 				} catch (err) {}
 			} else {
 			}
@@ -356,8 +357,9 @@
                                     submiting = false;
                                     await update();
                                     edit = false;
-                                    await invalidateAll();
-                                    refreshData();
+                                    invalidateAll().then(() => {
+                                        refreshData();
+                                    });
                                     if(form?.success){
                                         newMsgBox.push({
                                             Title: "Berhasil",
@@ -528,8 +530,9 @@
                             submiting = false;
                             await update();
                             edit = false;
-                            await invalidateAll();
-                            refreshData();
+                            invalidateAll().then(() => {
+                                refreshData();
+                            });
                             if(form?.success){
                                 newMsgBox.push({
                                     Title: "Berhasil",
@@ -574,7 +577,8 @@
     {/if}
 </div>
 
-<svelte:window on:focus={async () => {
-    await invalidateAll();
-    refreshData();
+<svelte:window on:focus={() => {
+    invalidateAll().then(() => {
+        refreshData();
+    });
 }} />

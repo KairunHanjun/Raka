@@ -83,6 +83,7 @@
             formData.set('img1', compressedImage1);
             formData.set("once", "1");
             try {
+                if(!compressedImage1){throw new Error("Gambar tidak ada")}
                 const res = await fetch("/api/upload_pic", {
                     method: "POST",
                     body: formData,
@@ -205,15 +206,16 @@
     });
 
     $effect(() => {
-		const interval = setInterval(async () => {
+		const interval = setInterval(() => {
 			if (navigator.onLine) {
 				try {
-					await invalidateAll();
-					refreshData();
+					invalidateAll().then(() => {
+                        refreshData();
+                    });
 				} catch (err) {}
 			} else {
 			}
-		}, 5 * 60 * 1000); // every 5 minutes
+		}, 60 * 1000); // every 5 minutes
 
 		return () => clearInterval(interval);
 	});
@@ -283,6 +285,9 @@
 
 <div class="h-fit w-screen flex flex-col justify-center! items-center gap-4">
     <Header name={data?.userNow.username.toUpperCase() ?? "User"} onclick={() => {
+        invalidateAll().then(() => {
+            refreshData();
+        });
         emptiedArray(editOther);
         if(lihatAbsen){
             lihatAbsen = false;
@@ -419,8 +424,9 @@
                         }
                         error = true;
                     }
-                    await invalidateAll();
-                    refreshData();
+                    invalidateAll().then(() => {
+                        refreshData();
+                    });
                     deleteArray(newMsgBox, "Loading");
                     anyThing = undefined!;
                 }
@@ -525,8 +531,9 @@
                         });
                     }else error = true;
                     deleteArray(newMsgBox, "Loading");
-                    await invalidateAll();
-                    refreshData();
+                    invalidateAll().then(() => {
+                        refreshData();
+                    });
                 }
             }}>
                 <p>Nama Customer: {editOther[1]}</p>
@@ -615,8 +622,9 @@
                             }
                         });
                     }else error = true;
-                    await invalidateAll();
-                    refreshData();
+                    invalidateAll().then(() => {
+                        refreshData();
+                    });
                     deleteArray(newMsgBox, "Loading");
                 }
             }}>
@@ -815,8 +823,9 @@
                         }
                         error = true;
                     };
-                    await invalidateAll();
-                    refreshData();
+                    invalidateAll().then(() => {
+                        refreshData();
+                    });
                     anyThing = undefined!;
                     deleteArray(newMsgBox, "Loading");
                     deleteArray(newMsgBox, "Perhatian");
@@ -1030,8 +1039,9 @@
                             }
                             error = true;
                         };
-                        await invalidateAll();
-                        refreshData();
+                        invalidateAll().then(() => {
+                            refreshData();
+                        });
                         anyThing = undefined!;
                         deleteArray(newMsgBox, "Loading");
                     }
@@ -1084,7 +1094,8 @@
 {/if}
 </div>
 
-<svelte:window on:focus={async () => {
-    await invalidateAll();
-    refreshData();
+<svelte:window on:focus={() => {
+    invalidateAll().then(() => {
+        refreshData();
+    });
 }} />
