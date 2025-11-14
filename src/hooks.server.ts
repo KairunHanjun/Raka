@@ -3,28 +3,19 @@ import * as auth from '$lib/server/auth';
 import { sequence } from '@sveltejs/kit/hooks';
 import { db } from '$lib/server/db';
 import { session, units } from '$lib/server/db/schema';
-import { lt, eq, sql } from 'drizzle-orm';
-
-let initialized = false;	
+import { lt, eq, sql } from 'drizzle-orm';	
 
 export const checkUnitsMiddleware: Handle = async ({ event, resolve }) => {
-	if (!initialized) {
-		initialized = true;
-		setInterval(async () => {
-			try{
-				const expiredUnits = await db.select()
-				.from(units)
-				.where(lt(units.toTime, sql`NOW()`));
-			for (const u of expiredUnits) {
-				await db.update(units)
-					.set({ unitState: 'StandBy' })
-					.where(eq(units.id, u.id));
-			}
-			}catch(error){
-
-			}
-		}, 60_000); // check every minute
-	}
+	try{
+		const expiredUnits = await db.select()
+		.from(units)
+		.where(lt(units.toTime, sql`NOW()`));
+		for (const u of expiredUnits) {
+			await db.update(units)
+				.set({ unitState: 'StandBy' })
+				.where(eq(units.id, u.id));
+		}
+	}catch(error){}
 
 	return resolve(event);
 };
@@ -63,7 +54,7 @@ const authMiddleware: Handle = async ({event, resolve}) => {
 	// 🧭 1. Not logged in trying to access protected route → send to landing
 	if (!user && !isPublic) {
 		console.log("Check User 1");
-		return Response.redirect(new URL('/?reason=SessionExpired', event.url), 302);
+		return Response.redirect(new URL('/', event.url), 302);
 	}
 
 	

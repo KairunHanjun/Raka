@@ -297,21 +297,21 @@
             <div class="flex w-full h-fit justify-between gap-2">
                 <div class="flex flex-col w-full h-fit justify-between">
                     <div class="flex w-fit h-fit items-center object-center">
-                        <div class="w-3 h-3 bg-green-600 rounded-sm me-2"></div>
+                        <div class="w-0 h-0 me-2 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[11px] border-b-green-600"></div>
                         <h2 class="text-white text-[15px] font-bold">Ready : {(rooms.filter(room => room.state === 'Ready').length)} Unit</h2>
                     </div>
                     <div class="flex w-fit h-fit items-center object-center">
-                        <div class="w-3 h-3 bg-red-600 rounded-sm me-2"></div>
+                        <div class="w-0 h-0 me-2 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[11px] border-t-red-600"></div>
                         <h2 class="text-white text-[15px] font-bold">Used : {(rooms.filter(room => room.state === 'Working').length)} Unit</h2>
                     </div>
                 </div>
                 <div class="flex flex-col w-full h-fit justify-between">
                     <div class="flex w-fit h-fit items-center object-center">
-                        <div class="w-3 h-3 bg-yellow-600 rounded-sm me-2"></div>
+                        <div class="w-3 h-3 bg-yellow-600 me-2"></div>
                         <h2 class="text-white text-[15px] font-bold">Process : {(rooms.filter(room => room.state === 'StandBy').length)} Unit</h2>
                     </div>
                     <div class="flex w-fit h-fit items-center object-center">
-                        <div class="w-3 h-3 bg-gray-600 rounded-sm me-2"></div>
+                        <div class="w-3 h-3 bg-gray-600 rounded-xl me-2"></div>
                         <h2 class="text-white text-[15px] font-bold">Closed : {(rooms.filter(room => room.state === 'Closed').length)} Unit</h2>
                     </div>
                 </div>
@@ -342,7 +342,7 @@
     }}>
     {#if edit}
         <div class="flex w-full h-fit justify-center gap-2 bg-blue-950 rounded-2xl p-2">
-            <h1 class=" text-2xl font-bold">{editName}</h1>
+            <h1 class="text-white! text-[1rem] font-bold">{editName.split("|")[0]} {editName.split("|")[1]}</h1>
         </div>
         {#if !editOther[1]}
             <form bind:this={bindThisForm} action="?/keep" method="post" class="flex flex-col w-full h-fit gap-2" enctype="multipart/form-data" use:enhance={() => {
@@ -396,9 +396,9 @@
                 <input type="text" name="jabatan" value={accountTypeMap[data?.userNow.accountType] || 'Tidak Dikenali'} id="" required readonly>
                 <label for="jam">Jam: </label>
                 <input type="text" name="jam" id="" value={(formatTime(hours)+":"+formatTime(minutes))} required readonly>
-                {#if editName === "Tidak Approve"}
+                {#if editName.split("|")[1] === "Tidak Approve"}
                     <label for="kebersihanId">Id Kebersihan Ruangan: </label>
-                    <input type="text" name="kebersihanId" readonly>
+                    <input type="text" name="kebersihanId" value={editAny.id} readonly>
                 {/if}
                 <label for="foto">Foto Ruangan:</label>
                 <input bind:this={bindThisInput} disabled={submiting} type="file" id="foto" name="foto" accept="image/*" capture="environment" required />           
@@ -422,7 +422,7 @@
                                 Action: () => {}
                             });
                             const compressedImage1 = await compressImage(bindThisInput?.files[0], 2);
-                            const compressedImage2 = await compressImage(bindThisInput?.files[0], 2);
+                            const compressedImage2 = await compressImage(bindThisInput?.files[1], 2);
                             const formData = new FormData();
                             formData.set('img1', compressedImage1);
                             formData.set('img2', compressedImage2);
@@ -477,22 +477,22 @@
         <div class="flex w-full h-fit justify-between gap-2 bg-blue-950 rounded-2xl p-2">
             <div class="flex flex-col w-full h-fit justify-between">
                 <div class="flex w-fit h-fit items-center object-center">
-                    <div class="w-3 h-3 bg-green-600 rounded-sm me-2"></div>
-                    <h2 class="text-white text-[1rem] font-bold">Ready : {(rooms.filter(room => room.state === 'Ready').length)} Unit</h2>
+                    <div class="w-0 h-0 me-2 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[11px] border-b-green-600"></div>
+                    <h2 class="text-white text-[12px] font-bold">Ready : {(rooms.filter(room => room.state === 'Ready').length)} Unit</h2>
                 </div>
                 <div class="flex w-fit h-fit items-center object-center">
-                    <div class="w-3 h-3 bg-red-600 rounded-sm me-2"></div>
-                    <h2 class="text-white text-[1rem] font-bold">Used : {(rooms.filter(room => room.state === 'Working').length)} Unit</h2>
+                    <div class="w-0 h-0 me-2 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[11px] border-t-red-600"></div>
+                    <h2 class="text-white text-[12px] font-bold">Used : {(rooms.filter(room => room.state === 'Working').length)} Unit</h2>
                 </div>
             </div>
             <div class="flex flex-col w-full h-fit justify-between">
                 <div class="flex w-fit h-fit items-center object-center">
-                    <div class="w-3 h-3 bg-yellow-600 rounded-sm me-2"></div>
-                    <h2 class="text-white text-[1rem] font-bold">Process : {(rooms.filter(room => room.state === 'StandBy').length)} Unit</h2>
+                    <div class="w-3 h-3 bg-yellow-600 me-2"></div>
+                    <h2 class="text-white text-[12px] font-bold">Process : {(rooms.filter(room => room.state === 'StandBy').length)} Unit</h2>
                 </div>
                 <div class="flex w-fit h-fit items-center object-center">
-                    <div class="w-3 h-3 bg-gray-600 rounded-sm me-2"></div>
-                    <h2 class="text-white text-[1rem] font-bold">Closed : {(rooms.filter(room => room.state === 'Closed').length)} Unit</h2>
+                    <div class="w-3 h-3 bg-gray-600 rounded-xl me-2"></div>
+                    <h2 class="text-white text-[12px] font-bold">Closed : {(rooms.filter(room => room.state === 'Closed').length)} Unit</h2>
                 </div>
             </div>
         </div>
@@ -509,21 +509,25 @@
                 "
                     onclick={() => {
                         editAny = data?.dataKebersihan?.find(x => x.id === unit.kebersihan);
-                        if(!unit.pending || editAny.approve === false){
-                            edit = true;
-                            editId = unit.id;
-                            editName = (editAny.approve === false) ? "Tidak Approve" : unit.name;
-                            editApprove = editAny.id;
-                            editOther.push(unit.state);
-                            if(editAny.approve === false) newMsgBox.push({
-                                Title: "Tidak Approve",
-                                Message: "Maaf, ruangan ini belum di approve",
+                        if(unit.pending){
+                            newMsgBox.push({
+                                Title: "Approve",
+                                Message: "Maaf, ruangan ini masih dalam tahap penilaian",
                                 ButtonType: 'ok',
                                 NotificationType: 'info',
                                 Action: () => {
-                                    deleteArray(newMsgBox, "Tidak Approve");
+                                    deleteArray(newMsgBox, "Approve");
                                 }
                             });
+                            return;
+                        }else if(editAny.approve === false){
+                            edit = true;
+                            editId = unit.id;
+                            editName = `${unit.name}|Tidak Approve`;
+                            editApprove = editAny.id;
+                            editOther.push(unit.state);
+                            
+                            return;
                         }
                         edit = true;
                         editId = unit.id;
@@ -532,9 +536,12 @@
                         editOther.push("pending");
                     }}
                 >
+                
+
+                    <p class=" font-bold text-[13px] text-center">{(unit.state === 'StandBy') ? "■" : "▲"}</p>
                     <p class=" font-bold text-[2rem] text-center">{unit.name}</p>
                     {#if unit.times != ""}
-                    <p class=" text-[1rem] text-center">{unit.times}</p>
+                        <p class=" text-[1rem] text-center">{unit.times}</p>
                     {/if}
                 </button>
             {/if}
@@ -547,7 +554,7 @@
     }}>
         {#if edit}
             <div class="flex w-full h-fit justify-center gap-2 bg-blue-950 rounded-2xl p-2">
-                <h1 class=" text-2xl font-bold">{editName}</h1>
+                <h1 class="text-white! text-2xl font-bold">{editName}</h1>
             </div>
             <form onsubmit={async () => {
                 submiting=true;
@@ -625,22 +632,22 @@
             <div class="flex w-full h-fit justify-between gap-2 bg-blue-950 rounded-2xl p-2">
                 <div class="flex flex-col w-full h-fit justify-between">
                     <div class="flex w-fit h-fit items-center object-center">
-                        <div class="w-3 h-3 bg-green-600 rounded-sm me-2"></div>
-                        <h2 class="text-white text-[1rem] font-bold">Ready : {(rooms.filter(room => room.state === 'Ready').length)} Unit</h2>
+                        <div class="w-0 h-0 me-2 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[11px] border-b-green-600"></div>
+                        <h2 class="text-white text-[12px] font-bold">Ready : {(rooms.filter(room => room.state === 'Ready').length)} Unit</h2>
                     </div>
                     <div class="flex w-fit h-fit items-center object-center">
-                        <div class="w-3 h-3 bg-red-600 rounded-sm me-2"></div>
-                        <h2 class="text-white text-[1rem] font-bold">Used : {(rooms.filter(room => room.state === 'Working').length)} Unit</h2>
+                        <div class="w-0 h-0 me-2 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[11px] border-t-red-600"></div>
+                        <h2 class="text-white text-[12px] font-bold">Used : {(rooms.filter(room => room.state === 'Working').length)} Unit</h2>
                     </div>
                 </div>
                 <div class="flex flex-col w-full h-fit justify-between">
                     <div class="flex w-fit h-fit items-center object-center">
-                        <div class="w-3 h-3 bg-yellow-600 rounded-sm me-2"></div>
-                        <h2 class="text-white text-[1rem] font-bold">Process : {(rooms.filter(room => room.state === 'StandBy').length)} Unit</h2>
+                        <div class="w-3 h-3 bg-yellow-600 me-2"></div>
+                        <h2 class="text-white text-[12px] font-bold">Process : {(rooms.filter(room => room.state === 'StandBy').length)} Unit</h2>
                     </div>
                     <div class="flex w-fit h-fit items-center object-center">
-                        <div class="w-3 h-3 bg-gray-600 rounded-sm me-2"></div>
-                        <h2 class="text-white text-[1rem] font-bold">Closed : {(rooms.filter(room => room.state === 'Closed').length)} Unit</h2>
+                        <div class="w-3 h-3 bg-gray-600 rounded-xl me-2"></div>
+                        <h2 class="text-white text-[12px] font-bold">Closed : {(rooms.filter(room => room.state === 'Closed').length)} Unit</h2>
                     </div>
                 </div>
             </div>
@@ -673,6 +680,7 @@
                         }
                     }}
                 >
+                <p class=" font-bold text-[13px] text-center">{(unit.state == 'Ready') ? "▲" : (unit.state == 'StandBy') ? "■" : (unit.state == 'Working') ? "▼" : "●"}</p>
                 <p class=" font-bold text-[2rem] text-center">{unit.name}</p>
                     {#if unit.times != ""}
                         <p class=" text-[1rem] text-center">{unit.times}</p>

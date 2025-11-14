@@ -18,9 +18,9 @@ export const load: PageServerLoad = async ({ locals }) => {
 			dataAkun,
 			dataUnits,
 			dataAgents,
-			dataKebersihan,
-			dataAbsensi,
 			dataMasalah,
+			dataAbsensi,
+			dataKebersihan,
 			dataCustomers,
 		] = await Promise.all([
 			db.select({

@@ -39,3 +39,24 @@ export async function compressImage(file: File, maxSizeMB = 4): Promise<File> {
         type: "image/jpeg",
     });
 }
+
+export async function deletePic(imgId1: string, imgId2: string = ''): Promise<string>{
+        const formData = new FormData();
+        if(imgId2.trim().length <= 0){
+            formData.set('img1', imgId1);
+            formData.set('once', '1');
+        }else{
+            formData.set('img1', imgId1);
+            formData.set('img2', imgId2);
+        }
+        try {
+            const res = await fetch("/api/delete_pic", {
+                method: "POST",
+                body: formData,
+            });
+            if (!res.ok) throw new Error(await res.text());
+            return '';
+        }catch(error){
+            return (error as Error).message;
+        }
+    }

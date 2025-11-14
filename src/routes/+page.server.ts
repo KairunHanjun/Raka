@@ -30,10 +30,7 @@ export const actions = {
 			createdByWho: string;
 		} | undefined = undefined;
 		try {
-			if (locals.session){
-				console.log(locals.session);
-				redirect(303, "/");
-			}
+			
 			// Fetch user
 			[user] = await db.select().from(accounts).where(eq(accounts.username, username.toLocaleLowerCase()));
 			if (!user) 

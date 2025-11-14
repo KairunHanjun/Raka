@@ -9,8 +9,10 @@
 	import { onMount } from "svelte";
     import type { PageProps } from "./$types";
 	import { browser } from "$app/environment";
-	import { compressImage } from "$lib";
+	import { compressImage, deletePic } from "$lib";
     let { data, form }: PageProps = $props();
+
+    
 
     const editOther: string[] = $state([]);
     const accountTypeMap = {
@@ -334,21 +336,21 @@
             <div class="flex w-full h-fit justify-between gap-2">
                 <div class="flex flex-col w-full h-fit justify-between">
                     <div class="flex w-fit h-fit items-center object-center">
-                        <div class="w-3 h-3 bg-green-600 rounded-sm me-2"></div>
+                        <div class="w-0 h-0 me-2 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[11px] border-b-green-600"></div>
                         <h2 class="text-white text-[15px] font-bold">Ready : {(rooms.filter(room => room.state === 'Ready').length)} Unit</h2>
                     </div>
                     <div class="flex w-fit h-fit items-center object-center">
-                        <div class="w-3 h-3 bg-red-600 rounded-sm me-2"></div>
+                        <div class="w-0 h-0 me-2 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[11px] border-t-red-600"></div>
                         <h2 class="text-white text-[15px] font-bold">Used : {(rooms.filter(room => room.state === 'Working').length)} Unit</h2>
                     </div>
                 </div>
                 <div class="flex flex-col w-full h-fit justify-between">
                     <div class="flex w-fit h-fit items-center object-center">
-                        <div class="w-3 h-3 bg-yellow-600 rounded-sm me-2"></div>
+                        <div class="w-3 h-3 bg-yellow-600 me-2"></div>
                         <h2 class="text-white text-[15px] font-bold">Process : {(rooms.filter(room => room.state === 'StandBy').length)} Unit</h2>
                     </div>
                     <div class="flex w-fit h-fit items-center object-center">
-                        <div class="w-3 h-3 bg-gray-600 rounded-sm me-2"></div>
+                        <div class="w-3 h-3 bg-gray-600 rounded-xl me-2"></div>
                         <h2 class="text-white text-[15px] font-bold">Closed : {(rooms.filter(room => room.state === 'Closed').length)} Unit</h2>
                     </div>
                 </div>
@@ -379,7 +381,7 @@
     }}>
     {#if edit}
         <div class="flex w-full h-fit justify-center gap-2 bg-blue-950 rounded-2xl p-2">
-            <h1 class=" text-2xl font-bold">{editName}</h1>
+            <h1 class="text-white! text-2xl font-bold">{editName}</h1>
         </div>
         {#if editOther[0] === "Ready"}
             <form onsubmit={() => {
@@ -592,7 +594,7 @@
                 <button disabled={submiting} type="submit" class="flex w-full h-fit bg-gradient-to-b from-green-500 via-green-600 to-green-700 justify-center items-center text-center text-2xl rounded-2xl font-sans"> SUBMIT </button>
             </form>
         {:else if editOther[0] === "StandBy"}
-            <form onsubmit={() => {
+            <form onsubmit={async (e) => {
                 submiting=true;
                 newMsgBox.push({
                     Title: "Loading",
@@ -600,6 +602,7 @@
                     NotificationType: "info",
                     Action: () => {}
                 })
+                
                 
             }} action="?/approve" method="post" use:enhance={async () => {
                 return async ({update}) => {
@@ -645,11 +648,39 @@
                     <p class="font-bold text-[1rem] text-center">{editOther[1]}</p>
                     <p class="font-bold text-2xl text-center">Apakah semuanya aman?</p>
                     <div class="w-full h-full flex justify-center justify-items-center items-center text-center">
-                        <button class="flex w-full h-fit bg-gradient-to-b from-green-500 via-green-600 to-green-700 justify-center items-center text-center text-2xl rounded-2xl font-sans" onclick={() => {
-                            editOther.push("Terima");
+                        <button class={`${(submiting) ? "hidden" : ""} flex w-full h-fit bg-gradient-to-b from-green-500 via-green-600 to-green-700 justify-center items-center text-center text-2xl rounded-2xl font-sans`} onclick={async () => {
+                            let res = await deletePic(editOther[2], editOther[3]);
+                            if(res.trim().length <= 0){
+                                editOther.push("Terima");
+                                bindThisButton?.click();
+                            }else{
+                                newMsgBox.push({
+                                    Title: "Terjadi Masalah",
+                                    Message: res,
+                                    ButtonType: 'ok',
+                                    NotificationType: 'danger',
+                                    Action: () => {
+                                        deleteArray(newMsgBox, "Terjadi Masalah");
+                                    }
+                                })
+                            }
                         }}> Ya </button>
-                        <button class="flex w-full h-fit bg-gradient-to-b from-red-500 via-red-600 to-red-700 justify-center items-center text-center text-2xl rounded-2xl font-sans" onclick={() => {
-                            editOther.push("Tolak");
+                        <button class="flex w-full h-fit bg-gradient-to-b from-red-500 via-red-600 to-red-700 justify-center items-center text-center text-2xl rounded-2xl font-sans" onclick={async () => {
+                            let res = await deletePic(editOther[2], editOther[3]);
+                            if(res.trim().length <= 0){
+                                editOther.push("Tolak");
+                                bindThisButton?.click();
+                            }else{
+                                newMsgBox.push({
+                                    Title: "Terjadi Masalah",
+                                    Message: res,
+                                    ButtonType: 'ok',
+                                    NotificationType: 'danger',
+                                    Action: () => {
+                                        deleteArray(newMsgBox, "Terjadi Masalah");
+                                    }
+                                })
+                            }
                         }}> Tidak </button>
                     </div>
                 </div>
@@ -660,22 +691,22 @@
         <div class="flex w-full h-fit justify-between gap-2 bg-blue-950 rounded-2xl p-2">
             <div class="flex flex-col w-full h-fit justify-between">
                 <div class="flex w-fit h-fit items-center object-center">
-                    <div class="w-3 h-3 bg-green-600 rounded-sm me-2"></div>
-                    <h2 class="text-white text-[1rem] font-bold">Ready : {(rooms.filter(room => room.state === 'Ready').length)} Unit</h2>
+                    <div class="w-0 h-0 me-2 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[11px] border-b-green-600"></div>
+                    <h2 class="text-white text-[12px] font-bold">Ready : {(rooms.filter(room => room.state === 'Ready').length)} Unit</h2>
                 </div>
                 <div class="flex w-fit h-fit items-center object-center">
-                    <div class="w-3 h-3 bg-red-600 rounded-sm me-2"></div>
-                    <h2 class="text-white text-[1rem] font-bold">Used : {(rooms.filter(room => room.state === 'Working').length)} Unit</h2>
+                    <div class="w-0 h-0 me-2 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[11px] border-t-red-600"></div>
+                    <h2 class="text-white text-[12px] font-bold">Used : {(rooms.filter(room => room.state === 'Working').length)} Unit</h2>
                 </div>
             </div>
             <div class="flex flex-col w-full h-fit justify-between">
                 <div class="flex w-fit h-fit items-center object-center">
-                    <div class="w-3 h-3 bg-yellow-600 rounded-sm me-2"></div>
-                    <h2 class="text-white text-[1rem] font-bold">Process : {(rooms.filter(room => room.state === 'StandBy').length)} Unit</h2>
+                    <div class="w-3 h-3 bg-yellow-600 me-2"></div>
+                    <h2 class="text-white text-[12px] font-bold">Process : {(rooms.filter(room => room.state === 'StandBy').length)} Unit</h2>
                 </div>
                 <div class="flex w-fit h-fit items-center object-center">
-                    <div class="w-3 h-3 bg-gray-600 rounded-sm me-2"></div>
-                    <h2 class="text-white text-[1rem] font-bold">Closed : {(rooms.filter(room => room.state === 'Closed').length)} Unit</h2>
+                    <div class="w-3 h-3 bg-gray-600 rounded-xl me-2"></div>
+                    <h2 class="text-white text-[12px] font-bold">Closed : {(rooms.filter(room => room.state === 'Closed').length)} Unit</h2>
                 </div>
             </div>
         </div>
@@ -765,6 +796,7 @@
                     }
                 }}
             >
+                <p class=" font-bold text-[13px] text-center">{(unit.state == 'Ready') ? "▲" : (unit.state == 'StandBy') ? "■" : (unit.state == 'Working') ? "▼" : "●"}</p>
                 <p class=" font-bold text-[2rem] text-center">{unit.name}</p>
                 {#if unit.times != ""}
                 <p class=" text-[1rem] text-center">{unit.times}</p>
@@ -779,7 +811,7 @@
     }}>
         {#if edit}
             <div class="flex w-full h-fit justify-center gap-2 bg-blue-950 rounded-2xl p-2">
-                <h1 class=" text-2xl font-bold">{editName}</h1>
+                <h1 class="text-white! text-2xl font-bold">{editName}</h1>
             </div>
             <form onsubmit={async () => {
                 
@@ -887,22 +919,22 @@
             <div class="flex w-full h-fit justify-between gap-2 bg-blue-950 rounded-2xl p-2">
                 <div class="flex flex-col w-full h-fit justify-between">
                     <div class="flex w-fit h-fit items-center object-center">
-                        <div class="w-3 h-3 bg-green-600 rounded-sm me-2"></div>
-                        <h2 class="text-white text-[1rem] font-bold">Ready : {(rooms.filter(room => room.state === 'Ready').length)} Unit</h2>
+                        <div class="w-0 h-0 me-2 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[11px] border-b-green-600"></div>
+                        <h2 class="text-white text-[12px] font-bold">Ready : {(rooms.filter(room => room.state === 'Ready').length)} Unit</h2>
                     </div>
                     <div class="flex w-fit h-fit items-center object-center">
-                        <div class="w-3 h-3 bg-red-600 rounded-sm me-2"></div>
-                        <h2 class="text-white text-[1rem] font-bold">Used : {(rooms.filter(room => room.state === 'Working').length)} Unit</h2>
+                        <div class="w-0 h-0 me-2 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[11px] border-t-red-600"></div>
+                        <h2 class="text-white text-[12px] font-bold">Used : {(rooms.filter(room => room.state === 'Working').length)} Unit</h2>
                     </div>
                 </div>
                 <div class="flex flex-col w-full h-fit justify-between">
                     <div class="flex w-fit h-fit items-center object-center">
-                        <div class="w-3 h-3 bg-yellow-600 rounded-sm me-2"></div>
-                        <h2 class="text-white text-[1rem] font-bold">Process : {(rooms.filter(room => room.state === 'StandBy').length)} Unit</h2>
+                        <div class="w-3 h-3 bg-yellow-600 me-2"></div>
+                        <h2 class="text-white text-[12px] font-bold">Process : {(rooms.filter(room => room.state === 'StandBy').length)} Unit</h2>
                     </div>
                     <div class="flex w-fit h-fit items-center object-center">
-                        <div class="w-3 h-3 bg-gray-600 rounded-sm me-2"></div>
-                        <h2 class="text-white text-[1rem] font-bold">Closed : {(rooms.filter(room => room.state === 'Closed').length)} Unit</h2>
+                        <div class="w-3 h-3 bg-gray-600 rounded-xl me-2"></div>
+                        <h2 class="text-white text-[12px] font-bold">Closed : {(rooms.filter(room => room.state === 'Closed').length)} Unit</h2>
                     </div>
                 </div>
             </div>
@@ -935,7 +967,9 @@
                         }
                     }}
                 >
-                <p class=" font-bold text-[2rem] text-center">{unit.name}</p>
+                
+                    <p class=" font-bold text-[13px] text-center">{(unit.state == 'Ready') ? "▲" : (unit.state == 'StandBy') ? "■" : (unit.state == 'Working') ? "▼" : "●"}</p>
+                    <p class=" font-bold text-[2rem] text-center">{unit.name}</p>
                     {#if unit.times != ""}
                         <p class=" text-[1rem] text-center">{unit.times}</p>
                     {/if}

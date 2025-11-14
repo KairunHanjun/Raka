@@ -15,6 +15,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
 	import { browser } from "$app/environment";
     import ExcelJS from 'exceljs';
 	import saveAs from "file-saver";
+	import { deletePic } from "$lib";
 
   type UnitItem = {
     id: number | string | any;
@@ -773,22 +774,22 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                 <div class="flex w-full h-fit justify-between gap-2">
                     <div class="flex flex-col w-full h-fit justify-between">
                         <div class="flex w-fit h-fit items-center object-center">
-                            <div class="w-3 h-3 bg-green-600 rounded-sm me-2"></div>
-                            <h2 class="text-white text-[1rem] font-bold">Ready : {(rooms.filter(room => room.state === 'Ready').length)} Unit</h2>
+                            <div class="w-0 h-0 me-2 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[11px] border-b-green-600"></div>
+                            <h2 class="text-white text-[15px] font-bold">Ready : {(rooms.filter(room => room.state === 'Ready').length)} Unit</h2>
                         </div>
                         <div class="flex w-fit h-fit items-center object-center">
-                            <div class="w-3 h-3 bg-red-600 rounded-sm me-2"></div>
-                            <h2 class="text-white text-[1rem] font-bold">Used : {(rooms.filter(room => room.state === 'Working').length)} Unit</h2>
+                            <div class="w-0 h-0 me-2 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[11px] border-t-red-600"></div>
+                            <h2 class="text-white text-[15px] font-bold">Used : {(rooms.filter(room => room.state === 'Working').length)} Unit</h2>
                         </div>
                     </div>
                     <div class="flex flex-col w-full h-fit justify-between">
                         <div class="flex w-fit h-fit items-center object-center">
-                            <div class="w-3 h-3 bg-yellow-600 rounded-sm me-2"></div>
-                            <h2 class="text-white text-[1rem] font-bold">Process : {(rooms.filter(room => room.state === 'StandBy').length)} Unit</h2>
+                            <div class="w-3 h-3 bg-yellow-600 me-2"></div>
+                            <h2 class="text-white text-[15px] font-bold">Process : {(rooms.filter(room => room.state === 'StandBy').length)} Unit</h2>
                         </div>
                         <div class="flex w-fit h-fit items-center object-center">
-                            <div class="w-3 h-3 bg-gray-600 rounded-sm me-2"></div>
-                            <h2 class="text-white text-[1rem] font-bold">Closed : {(rooms.filter(room => room.state === 'Closed').length)} Unit</h2>
+                            <div class="w-3 h-3 bg-gray-600 rounded-xl me-2"></div>
+                            <h2 class="text-white text-[15px] font-bold">Closed : {(rooms.filter(room => room.state === 'Closed').length)} Unit</h2>
                         </div>
                     </div>
                 </div>
@@ -1384,13 +1385,39 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                         <p class="font-bold text-[1rem] text-center">{dataMasalahTerkini[0]}</p>
                         <p class="font-bold text-2xl text-center">Apakah semuanya aman?</p>
                         <div class="w-full h-full flex justify-center justify-items-center items-center text-center">
-                            <button class="flex w-full h-fit bg-gradient-to-b from-green-500 via-green-600 to-green-700 justify-center items-center text-center text-2xl rounded-2xl font-sans" onclick={() => {
-                                dataMasalahTerkini.push("Terima");
-                                bindThisButton?.click();
+                            <button class="flex w-full h-fit bg-gradient-to-b from-green-500 via-green-600 to-green-700 justify-center items-center text-center text-2xl rounded-2xl font-sans" onclick={async () => {
+                                let res = await deletePic(dataMasalahTerkini[1], dataMasalahTerkini[2]);
+                                if(res.trim().length <= 0){
+                                    dataMasalahTerkini.push("Terima");
+                                    bindThisButton?.click();
+                                }else{
+                                    newMsgBoxBackUp.push({
+                                        Title: "Terjadi Masalah",
+                                        Message: res,
+                                        ButtonType: 'ok',
+                                        NotificationType: 'danger',
+                                        Action: () => {
+                                            deleteArray(newMsgBoxBackUp, "Terjadi Masalah");
+                                        }
+                                    })
+                                }
                             }}> Ya </button>
-                            <button class="flex w-full h-fit bg-gradient-to-b from-red-500 via-red-600 to-red-700 justify-center items-center text-center text-2xl rounded-2xl font-sans" onclick={() => {
-                                dataMasalahTerkini.push("Tolak");
-                                bindThisButton?.click();
+                            <button class="flex w-full h-fit bg-gradient-to-b from-red-500 via-red-600 to-red-700 justify-center items-center text-center text-2xl rounded-2xl font-sans" onclick={async () => {
+                                let res = await deletePic(dataMasalahTerkini[1], dataMasalahTerkini[2]);
+                                if(res.trim().length <= 0){
+                                    dataMasalahTerkini.push("Tolak");
+                                    bindThisButton?.click();
+                                }else{
+                                    newMsgBoxBackUp.push({
+                                        Title: "Terjadi Masalah",
+                                        Message: res,
+                                        ButtonType: 'ok',
+                                        NotificationType: 'danger',
+                                        Action: () => {
+                                            deleteArray(newMsgBoxBackUp, "Terjadi Masalah");
+                                        }
+                                    })
+                                }
                             }}> Tidak </button>
                         </div>
                     </div>
@@ -1400,22 +1427,22 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                 <div class="flex w-full h-fit justify-between gap-2 bg-blue-950 rounded-2xl p-2">
                     <div class="flex flex-col w-full h-fit justify-between">
                         <div class="flex w-fit h-fit items-center object-center">
-                            <div class="w-3 h-3 bg-green-600 rounded-sm me-2"></div>
-                            <h2 class="text-white text-[1rem] font-bold">Ready : {(rooms.filter(room => room.state === 'Ready').length)} Unit</h2>
+                            <div class="w-0 h-0 me-2 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[11px] border-b-green-600"></div>
+                            <h2 class="text-white text-[12px] font-bold">Ready : {(rooms.filter(room => room.state === 'Ready').length)} Unit</h2>
                         </div>
                         <div class="flex w-fit h-fit items-center object-center">
-                            <div class="w-3 h-3 bg-red-600 rounded-sm me-2"></div>
-                            <h2 class="text-white text-[1rem] font-bold">Used : {(rooms.filter(room => room.state === 'Working').length)} Unit</h2>
+                            <div class="w-0 h-0 me-2 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[11px] border-t-red-600"></div>
+                            <h2 class="text-white text-[12px] font-bold">Used : {(rooms.filter(room => room.state === 'Working').length)} Unit</h2>
                         </div>
                     </div>
                     <div class="flex flex-col w-full h-fit justify-between">
                         <div class="flex w-fit h-fit items-center object-center">
-                            <div class="w-3 h-3 bg-yellow-600 rounded-sm me-2"></div>
-                            <h2 class="text-white text-[1rem] font-bold">Process : {(rooms.filter(room => room.state === 'StandBy').length)} Unit</h2>
+                            <div class="w-3 h-3 bg-yellow-600 me-2"></div>
+                            <h2 class="text-white text-[12px] font-bold">Process : {(rooms.filter(room => room.state === 'StandBy').length)} Unit</h2>
                         </div>
                         <div class="flex w-fit h-fit items-center object-center">
-                            <div class="w-3 h-3 bg-gray-600 rounded-sm me-2"></div>
-                            <h2 class="text-white text-[1rem] font-bold">Closed : {(rooms.filter(room => room.state === 'Closed').length)} Unit</h2>
+                            <div class="w-3 h-3 bg-gray-600 rounded-xl me-2"></div>
+                            <h2 class="text-white text-[12px] font-bold">Closed : {(rooms.filter(room => room.state === 'Closed').length)} Unit</h2>
                         </div>
                     </div>
                 </div>
@@ -1475,6 +1502,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                         dataMasalahTerkini.push(unit.id);
                     }}
                     >
+                    <p class=" font-bold text-[13px] text-center">{(unit.state == 'Ready') ? "▲" : (unit.state == 'StandBy') ? "■" : (unit.state == 'Working') ? "▼" : "●"}</p>
                     <p class=" font-bold text-[2rem] text-center">{unit.name}</p>
                     {#if unit.times != ""}
                         <p class=" text-[1rem] text-center">{unit.times}</p>
@@ -1523,7 +1551,6 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                 {/if}
             {:else}
                 {#each rooms as unit (unit.id)}
-                <!-- DO SOMETHING WHEN CLICK OR NOT AND CHANGE COLOR BASED ON UNIT STATE -->
                     {#if data?.dataMasalah?.some(data => data.unitId === unit.id)}
                         <button class="
                             w-full text-white flex-col text-3xl font-bold p-5 rounded-2xl
@@ -1538,6 +1565,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                                 masalahLihat = true;
                             }}
                         >
+                            <p class=" font-bold text-[13px] text-center">{(unit.state == 'Ready') ? "▲" : (unit.state == 'StandBy') ? "■" : (unit.state == 'Working') ? "▼" : "●"}</p>
                             <p class=" font-bold text-[2rem] text-center">{unit.name}</p>
                             {#if unit.times != ""}
                             <p class=" text-[1rem] text-center">{unit.times}</p>
