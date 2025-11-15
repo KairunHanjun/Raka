@@ -9,35 +9,39 @@ export function toExcelLocalTime(dateStr: string) {
 }
 
 export async function compressImage(file: File, maxSizeMB = 4): Promise<File> {
-    const img = await createImageBitmap(file);
-    const canvas = document.createElement("canvas");
+    try{
+        const img = await createImageBitmap(file);
+        const canvas = document.createElement("canvas");
 
-    // Resize proportionally
-    const maxWidth = 1920;
-    const scale = Math.min(1, maxWidth / img.width);
-    canvas.width = img.width * scale;
-    canvas.height = img.height * scale;
+        // Resize proportionally
+        const maxWidth = 1920;
+        const scale = Math.min(1, maxWidth / img.width);
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
 
-    const ctx = canvas.getContext("2d");
-    ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const ctx = canvas.getContext("2d");
+        ctx?.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-    // Quality roughly estimated for ~4MB, you can tweak it
-    let quality = 0.9;
-    let blob = await new Promise<Blob | null>((resolve) =>
-        canvas.toBlob(resolve, "image/jpeg", quality)
-    );
-
-    // Further compress until under limit
-    while (blob && blob.size > maxSizeMB * 1024 * 1024 && quality > 0.2) {
-        quality -= 0.1;
-        blob = await new Promise<Blob | null>((resolve) =>
-        canvas.toBlob(resolve, "image/jpeg", quality)
+        // Quality roughly estimated for ~4MB, you can tweak it
+        let quality = 0.9;
+        let blob = await new Promise<Blob | null>((resolve) =>
+            canvas.toBlob(resolve, "image/jpeg", quality)
         );
-    }
 
-    return new File([blob!], file.name.replace(/\.[^.]+$/, ".jpg"), {
-        type: "image/jpeg",
-    });
+        // Further compress until under limit
+        while (blob && blob.size > maxSizeMB * 1024 * 1024 && quality > 0.2) {
+            quality -= 0.1;
+            blob = await new Promise<Blob | null>((resolve) =>
+            canvas.toBlob(resolve, "image/jpeg", quality)
+            );
+        }
+
+        return new File([blob!], file.name.replace(/\.[^.]+$/, ".jpg"), {
+            type: "image/jpeg",
+        });
+    }catch(error){
+        throw error;
+    }
 }
 
 export async function deletePic(imgId1: string, imgId2: string = ''): Promise<string>{

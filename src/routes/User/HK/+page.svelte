@@ -421,12 +421,12 @@
                                 NotificationType: "info",
                                 Action: () => {}
                             });
-                            const compressedImage1 = await compressImage(bindThisInput?.files[0], 2);
-                            const compressedImage2 = await compressImage(bindThisInput?.files[1], 2);
-                            const formData = new FormData();
-                            formData.set('img1', compressedImage1);
-                            formData.set('img2', compressedImage2);
                             try {
+                                const compressedImage1 = await compressImage(bindThisInput?.files[0], 2);
+                                const compressedImage2 = await compressImage(bindThisInput2?.files[0], 2);
+                                const formData = new FormData();
+                                formData.set('img1', compressedImage1);
+                                formData.set('img2', compressedImage2);
                                 const res = await fetch("/api/upload_pic", {
                                     method: "POST",
                                     body: formData,
@@ -444,10 +444,11 @@
                                 deleteArray(newMsgBox, 'Loading');
                                 newMsgBox.push({
                                     Title: "Error Terjadi",
-                                    Message: (error as Error).message,
+                                    Message: "Terjadi masalah saat mengupload gambar",
                                     NotificationType: "danger",
                                     ButtonType: 'ok',
                                     Action: () => {
+                                        console.log(error);
                                         deleteArray(newMsgBox, 'Error Terjadi');
                                     }
                                 });
@@ -509,31 +510,32 @@
                 "
                     onclick={() => {
                         editAny = data?.dataKebersihan?.find(x => x.id === unit.kebersihan);
-                        if(unit.pending){
-                            newMsgBox.push({
-                                Title: "Approve",
-                                Message: "Maaf, ruangan ini masih dalam tahap penilaian",
-                                ButtonType: 'ok',
-                                NotificationType: 'info',
-                                Action: () => {
-                                    deleteArray(newMsgBox, "Approve");
-                                }
-                            });
-                            return;
-                        }else if(editAny.approve === false){
-                            edit = true;
-                            editId = unit.id;
-                            editName = `${unit.name}|Tidak Approve`;
-                            editApprove = editAny.id;
-                            editOther.push(unit.state);
-                            
-                            return;
+                        if(editAny){
+                            if(unit.pending){
+                                newMsgBox.push({
+                                    Title: "Approve",
+                                    Message: "Maaf, ruangan ini masih dalam tahap penilaian",
+                                    ButtonType: 'ok',
+                                    NotificationType: 'info',
+                                    Action: () => {
+                                        deleteArray(newMsgBox, "Approve");
+                                    }
+                                });
+                                return;
+                            }else if(editAny.approve === false){
+                                edit = true;
+                                editId = unit.id;
+                                editName = `${unit.name}|Tidak Approve`;
+                                editApprove = editAny.id;
+                                editOther.push(unit.state);
+                                
+                                return;
+                            }
                         }
                         edit = true;
                         editId = unit.id;
                         editName = unit.name;
                         editOther.push(unit.state);
-                        editOther.push("pending");
                     }}
                 >
                 

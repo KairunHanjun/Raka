@@ -26,7 +26,7 @@ export async function createSession(token: string, userId: string): Promise<{ id
 	return session;
 }
 
-export async function validateSessionToken(token: string): Promise<{
+export async function validateSessionToken(token: string, event: RequestEvent): Promise<{
     session: null;
     user: null;
 } | {
@@ -42,21 +42,38 @@ export async function validateSessionToken(token: string): Promise<{
 		createdByWho: string;
     };
 }> {
-	const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
-	const [result] = await db
-		.select({
-			// Adjust user table here to tweak returned data
-			user: { id: table.accounts.id, username: table.accounts.username, accountType: table.accounts.accountType, createdByWho: table.accounts.createdByWho},
-			session: table.session
-		})
-		.from(table.session)
-		.innerJoin(table.accounts, eq(table.session.userId, table.accounts.id))
-		.where(eq(table.session.id, sessionId));
+	let user: {
+		accountType: "FO" | "HK" | "T" | "H";
+        id: string;
+        username: string;
+		createdByWho: string;
+    };
+	let session: {
+        id: string;
+        userId: string;
+        expiresAt: Date;
+    };
+	if(!event.locals.session || !event.locals.user){
+		const sessionId = encodeHexLowerCase(sha256(new TextEncoder().encode(token)));
+		const [result] = await db
+			.select({
+				// Adjust user table here to tweak returned data
+				user: { id: table.accounts.id, username: table.accounts.username, accountType: table.accounts.accountType, createdByWho: table.accounts.createdByWho},
+				session: table.session
+			})
+			.from(table.session)
+			.innerJoin(table.accounts, eq(table.session.userId, table.accounts.id))
+			.where(eq(table.session.id, sessionId));
 
-	if (!result) {
-		return { session: null, user: null };
+		if (!result) {
+			return { session: null, user: null };
+		}
+		user  = result.user;
+		session = result.session;
+	}else{
+		user = event.locals.user;
+		session = event.locals.session;
 	}
-	const { session, user } = result;
 
 	const sessionExpired = Date.now() >= session.expiresAt.getTime();
 	if (sessionExpired) {

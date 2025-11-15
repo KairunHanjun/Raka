@@ -25,7 +25,7 @@ const authMiddleware: Handle = async ({event, resolve}) => {
 	let user = null;
 	let session = null;
 	if (sessionToken) {
-		const result = await auth.validateSessionToken(sessionToken);
+		const result = await auth.validateSessionToken(sessionToken, event);
 		user = result.user;
 		session = result.session;
 
@@ -35,12 +35,11 @@ const authMiddleware: Handle = async ({event, resolve}) => {
 			auth.deleteSessionTokenCookie(event, '/');
 		}
 	}
-
 	event.locals.user = user;
 	event.locals.session = session;
 	// Path and route control
 	const pathname = event.url.pathname;
-	const publicRoutes = ['/','/offline','/service-worker.ts'];
+	const publicRoutes = ['/','/offline'];
 	const isPublic = publicRoutes.some((r) => pathname === r);
 
 	// Define each accountType’s dashboard

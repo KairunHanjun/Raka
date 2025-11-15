@@ -13,8 +13,6 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
 	import { onMount } from "svelte";
 	import type { PageProps } from "./$types";
 	import { browser } from "$app/environment";
-    import ExcelJS from 'exceljs';
-	import saveAs from "file-saver";
 	import { deletePic } from "$lib";
 
   type UnitItem = {
@@ -412,7 +410,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
 
     let selectedYear = $state(new Date().getFullYear());
 	let selectedMonth = $state(new Date().getMonth()); // 0–11
-
+    let approve: string = $state('');
 	// Map month names to number
 	const monthMap = {
 		January: 0, February: 1, March: 2, April: 3,
@@ -1352,7 +1350,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                         }else{
                             newMsgBox = {
                                 Title: "Gagal Ditambahkan",
-                                Message: "Agent gagal ditambahkan",
+                                Message: form?.error ?? '',
                                 NotificationType: 'danger',
                                 ButtonType: 'ok',
                                 Action: (() => {
@@ -1369,8 +1367,8 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                 }}>
                     
                     <input type="hidden" name="unitId" value={dataMasalahTerkini[4]}>
-                    <input type="hidden" name="kebersihanId" value={dataMasalahTerkini[3]}>
-                    <input type="hidden" name="approve" value={dataMasalahTerkini[5]}>
+                    <input type="hidden" name="kebersihanId" bind:value={dataMasalahTerkini[3]}>
+                    <input type="hidden" name="approve" bind:value={approve}>
                     <div class="w-full h-fit flex flex-col justify-center justify-items-center items-center text-center gap-1">
                         <div class="w-full h-fit flex justify-center justify-items-center items-center text-center gap-0.5">
                             <div class="w-full h-fit flex flex-col justify-center justify-items-center items-center text-center">
@@ -1386,9 +1384,10 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                         <p class="font-bold text-2xl text-center">Apakah semuanya aman?</p>
                         <div class="w-full h-full flex justify-center justify-items-center items-center text-center">
                             <button class="flex w-full h-fit bg-gradient-to-b from-green-500 via-green-600 to-green-700 justify-center items-center text-center text-2xl rounded-2xl font-sans" onclick={async () => {
+                                approve = "Terima";
                                 let res = await deletePic(dataMasalahTerkini[1], dataMasalahTerkini[2]);
+                                console.log(res);
                                 if(res.trim().length <= 0){
-                                    dataMasalahTerkini.push("Terima");
                                     bindThisButton?.click();
                                 }else{
                                     newMsgBoxBackUp.push({
@@ -1403,9 +1402,10 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                                 }
                             }}> Ya </button>
                             <button class="flex w-full h-fit bg-gradient-to-b from-red-500 via-red-600 to-red-700 justify-center items-center text-center text-2xl rounded-2xl font-sans" onclick={async () => {
+                                approve = "Tolak";
+                                console.log(dataMasalahTerkini);
                                 let res = await deletePic(dataMasalahTerkini[1], dataMasalahTerkini[2]);
                                 if(res.trim().length <= 0){
-                                    dataMasalahTerkini.push("Tolak");
                                     bindThisButton?.click();
                                 }else{
                                     newMsgBoxBackUp.push({

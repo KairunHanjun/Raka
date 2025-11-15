@@ -69,7 +69,8 @@
     let anyThing: any = $state(undefined);
     let isOnline: boolean = $state(true);
     let editPrice: number = $state(0);
-    let picId1 = $state('')
+    let picId1 = $state('');
+    let approve = $state('');
 
     async function upload(){
         if(bindThisInput2?.files){
@@ -80,11 +81,11 @@
                 NotificationType: "info",
                 Action: () => {}
             })
-            const compressedImage1 = await compressImage(bindThisInput2?.files[0], 2);
-            const formData = new FormData();
-            formData.set('img1', compressedImage1);
-            formData.set("once", "1");
             try {
+                const compressedImage1 = await compressImage(bindThisInput2?.files[0], 2);
+                const formData = new FormData();
+                formData.set('img1', compressedImage1);
+                formData.set("once", "1");
                 if(!compressedImage1){throw new Error("Gambar tidak ada")}
                 const res = await fetch("/api/upload_pic", {
                     method: "POST",
@@ -633,7 +634,7 @@
             }}>
                 <input type="hidden" name="unitId" value={editId}>
                 <input type="hidden" name="kebersihanId" value={editName}>
-                <input type="hidden" name="approve" value={editOther[4]}>
+                <input type="hidden" name="approve" bind:value={approve}>
                 <div class="w-full h-fit flex flex-col justify-center justify-items-center items-center text-center gap-1">
                     <div class="w-full h-fit flex justify-center justify-items-center items-center text-center gap-0.5">
                         <div class="w-full h-fit flex flex-col justify-center justify-items-center items-center text-center">
@@ -649,9 +650,9 @@
                     <p class="font-bold text-2xl text-center">Apakah semuanya aman?</p>
                     <div class="w-full h-full flex justify-center justify-items-center items-center text-center">
                         <button class={`${(submiting) ? "hidden" : ""} flex w-full h-fit bg-gradient-to-b from-green-500 via-green-600 to-green-700 justify-center items-center text-center text-2xl rounded-2xl font-sans`} onclick={async () => {
+                            approve = "Terima";
                             let res = await deletePic(editOther[2], editOther[3]);
                             if(res.trim().length <= 0){
-                                editOther.push("Terima");
                                 bindThisButton?.click();
                             }else{
                                 newMsgBox.push({
@@ -666,9 +667,9 @@
                             }
                         }}> Ya </button>
                         <button class="flex w-full h-fit bg-gradient-to-b from-red-500 via-red-600 to-red-700 justify-center items-center text-center text-2xl rounded-2xl font-sans" onclick={async () => {
+                            approve = "Tolak";
                             let res = await deletePic(editOther[2], editOther[3]);
                             if(res.trim().length <= 0){
-                                editOther.push("Tolak");
                                 bindThisButton?.click();
                             }else{
                                 newMsgBox.push({

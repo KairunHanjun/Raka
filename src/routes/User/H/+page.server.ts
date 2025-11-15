@@ -130,11 +130,17 @@ export const actions: Actions = {
 				await db.update(units).set({
 					kebersihan: null,
 					pending: false,
-					unitState: 'Working',
-					fromTime: new Date(customers_get[0].fromTime),
-                    toTime: new Date(customers_get[0].toTime),
+					unitState: 'Ready',
+					fromTime: null,
+                    toTime: null,
 				}).where(eq(units.id, unitId));
 				await db.delete(kebersihan).where(eq(kebersihan.id, kebersihanId));
+			}else if((fromData.get('approve')?.toString() ?? '').trim().length <= 0){
+				return fail(422, {
+					success: false,
+					message: "Approve Gagal",
+					error: "Aprrove tidak ada, gagal disetujui",
+				})
 			}else{
 				await db.update(kebersihan).set({
 					approve: false,

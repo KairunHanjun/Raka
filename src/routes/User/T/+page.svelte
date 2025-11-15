@@ -375,6 +375,7 @@
                                         });
                                     }else error = true;
                                     deleteArray(newMsgBox, "Loading");
+                                    anyThing = undefined!;
                                 }
                             }}>
                             <p class=" text-blue-600 font-bold text-3xl mt-2 pt-2">Opsi Teknisi</p>
@@ -386,7 +387,7 @@
                             <input class="text-black!" type="text" name="jam" id="" value={(formatTime(hours)+":"+formatTime(minutes))} required readonly>
 
                             <img src={anyThing} alt="" />
-                            <input type="file" id="foto" name="foto" accept="image/*" bind:this={bindThisInput} 
+                            <input disabled={submiting} type="file" id="foto" name="foto" accept="image/*" bind:this={bindThisInput} 
                                 onchange={() => {
                                     if(bindThisInput?.files){
                                         const reader = new FileReader(); 

@@ -80,35 +80,25 @@
 <link rel="preconnect" href="https://fonts.gstatic.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
 
+{#if newMsgBox}
+    <MessageBox title={newMsgBox?.Title} type={newMsgBox.NotificationType} buttonType={newMsgBox.ButtonType} handleResult={newMsgBox.Action}>
+        <div class="w-full h-fit flex flex-col justify-between items-center object-center text-center">
+            <p class=" text-amber-300">{newMsgBox?.Message}</p>
+        </div>
+    </MessageBox>
+{/if}
+
 {#if page.status === 500}
-    {#if newMsgBox}
-        <MessageBox title={newMsgBox?.Title} type={newMsgBox.NotificationType} buttonType={newMsgBox.ButtonType} handleResult={newMsgBox.Action}>
-            <div class="w-full h-fit flex flex-col justify-between items-center object-center text-center">
-                <p class=" text-amber-300">{newMsgBox?.Message}</p>
-            </div>
-        </MessageBox>
-    {/if}
-
-
     <div class="flex-col justify-center items-center text-center object-center w-screen h-fit">
         <enhanced:img src={logo} alt="LOGO" width=200 height=200 class="mx-auto" />
         <div class="flex w-screen h-fit items-center justify-center text-center p-2 mt-20">
             <SelamatDatang sayText1={"Anda Sedang Offline"} text2Say={"Silahkan koneksikan kembali perangkat anda ke internet"} text1Bold={true} text1Size="2rem" text2Size="1rem" class="text-white"/>
         </div>
-        
+        <p class="text-white">{(page.error)?.message}</p>
     </div>
 {/if}
 
 {#if page.status === 404}
-    {#if newMsgBox}
-        <MessageBox title={newMsgBox?.Title} type={newMsgBox.NotificationType} buttonType={newMsgBox.ButtonType} handleResult={newMsgBox.Action}>
-            <div class="w-full h-fit flex flex-col justify-between items-center object-center text-center">
-                <p class=" text-amber-300">{newMsgBox?.Message}</p>
-            </div>
-        </MessageBox>
-    {/if}
-
-
     <div class="flex-col justify-center items-center text-center object-center w-screen h-fit">
         <enhanced:img src={logo} alt="LOGO" width=200 height=200 class="mx-auto" />
         <div class="flex flex-col w-screen h-fit items-center justify-center text-center p-2 mt-20">
