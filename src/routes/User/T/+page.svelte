@@ -267,13 +267,20 @@
                     if(result === 'yes' && !loading){
                         loading = true;
                         try{
+                            newMsgBox.push({
+                                Title: "Loading",
+                                Message: "Harap Tunggu",
+                                NotificationType: "info",
+                                Action: () => {}
+                            });
                             await fetch('/logout', {
                                 method: 'GET'
                             });
                             loading = false;
                             deleteArray(newMsgBox, "Keluar");
+                            deleteArray(newMsgBox, "Loading");
                             goto('/');
-                        }catch (error) {console.log(error);}
+                        }catch (error) {console.log(error); deleteArray(newMsgBox, "Loading");}
                     }else if(result === 'no' && !loading){
                         deleteArray(newMsgBox, "Keluar");
                     }
@@ -308,7 +315,7 @@
 
         </div>
     {:else if menuClick == "Masalah"}
-        <ListingComp editable={false} items={[]} ifItems={false} ifOther={true} title="Masalah" selectedItemsID={0} itemEdit={false} >
+        <ListingComp refreshButton={() => {invalidateAll(); refreshData()}} editable={false} items={[]} ifItems={false} ifOther={true} title="Masalah" selectedItemsID={0} itemEdit={false} >
             {#if masalahLihat}
                 {#if inspeksiMasalah}
                     {#if benarSalah}
@@ -465,7 +472,7 @@
             {/if}
         </ListingComp>
     {:else if menuClick == "Absensi"}
-        <ListingComp title="Absensi" disableAddButton={true} editable={false} items={[]} ifItems={false} ifOther={false} itemEdit={true} selectedItemsID={0} onclick={() => {
+        <ListingComp refreshButton={() => {invalidateAll(); refreshData()}} title="Absensi" disableAddButton={true} editable={false} items={[]} ifItems={false} ifOther={false} itemEdit={true} selectedItemsID={0} onclick={() => {
 
     }}>
     {#if !edit && !lihatAbsen}

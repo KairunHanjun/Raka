@@ -274,13 +274,20 @@
                     if(result === 'yes' && !loading){
                         loading = true;
                         try{
+                            newMsgBox.push({
+                                Title: "Loading",
+                                Message: "Harap Tunggu",
+                                NotificationType: "info",
+                                Action: () => {}
+                            });
                             await fetch('/logout', {
                                 method: 'GET'
                             });
                             loading = false;
                             deleteArray(newMsgBox, "Keluar");
+                            deleteArray(newMsgBox, "Loading");
                             goto('/');
-                        }catch (error) {console.log(error);}
+                        }catch (error) {console.log(error); deleteArray(newMsgBox, "Loading");}
                     }else if(result === 'no' && !loading){
                         deleteArray(newMsgBox, "Keluar");
                     }
@@ -337,7 +344,7 @@
         </div>
     </div>
 {:else if menuClick === "Lihat Room"}
-    <ListingComp disableAddButton={true} editable={false} items={[]} ifItems={false} ifOther={false} itemEdit={true} title={"Rooms"} selectedItemsID={0} onclick={() => {
+    <ListingComp refreshButton={() => {invalidateAll(); refreshData()}} disableAddButton={true} editable={false} items={[]} ifItems={false} ifOther={false} itemEdit={true} title={"Rooms"} selectedItemsID={0} onclick={() => {
 
     }}>
     {#if edit}
@@ -551,7 +558,7 @@
     {/if}
     </ListingComp> 
 {:else if menuClick === "Input Masalah"}
-    <ListingComp disableAddButton={true} title="Masalah" editable={false} items={[]} ifItems={false} ifOther={false} itemEdit={true} selectedItemsID={0} onclick={() => {
+    <ListingComp refreshButton={() => {invalidateAll(); refreshData()}} disableAddButton={true} title="Masalah" editable={false} items={[]} ifItems={false} ifOther={false} itemEdit={true} selectedItemsID={0} onclick={() => {
 
     }}>
         {#if edit}
@@ -692,7 +699,7 @@
         {/if}
     </ListingComp>
 {:else if menuClick === "Absensi"}
-    <ListingComp title="Absensi" disableAddButton={true} editable={false} items={[]} ifItems={false} ifOther={false} itemEdit={true} selectedItemsID={0} onclick={() => {
+    <ListingComp refreshButton={() => {invalidateAll(); refreshData();}} title="Absensi" disableAddButton={true} editable={false} items={[]} ifItems={false} ifOther={false} itemEdit={true} selectedItemsID={0} onclick={() => {
 
     }}>
     {#if !edit && !lihatAbsen}

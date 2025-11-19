@@ -133,7 +133,7 @@
         if(data){
             emptiedArray(Items);
             emptiedArray(rooms);
-            console.log(data?.dataCustomers);
+            //console.log(data?.dataCustomers);
             data.dataUnits?.forEach(data => {
                 Items.push({
                     id: data.id,
@@ -314,13 +314,20 @@
                     if(result === 'yes' && !loading){
                         loading = true;
                         try{
+                            newMsgBox.push({
+                                Title: "Loading",
+                                Message: "Harap Tunggu",
+                                NotificationType: "info",
+                                Action: () => {}
+                            });
                             await fetch('/logout', {
                                 method: 'GET'
                             });
                             loading = false;
                             deleteArray(newMsgBox, "Keluar");
+                            deleteArray(newMsgBox, "Loading");
                             goto('/');
-                        }catch (error) {console.log(error);}
+                        }catch (error) {console.log(error); deleteArray(newMsgBox, "Loading");}
                     }else if(result === 'no' && !loading){
                         deleteArray(newMsgBox, "Keluar");
                     }
@@ -377,7 +384,7 @@
         </div>
     </div>
 {:else if menuClick === "Lihat Room"}
-    <ListingComp disableAddButton={true} editable={false} items={[]} ifItems={false} ifOther={false} itemEdit={true} title={"Rooms"} selectedItemsID={0} onclick={() => {
+    <ListingComp refreshButton={() => {invalidateAll(); refreshData();}} disableAddButton={true} editable={false} items={[]} ifItems={false} ifOther={false} itemEdit={true} title={"Rooms"} selectedItemsID={0} onclick={() => {
 
     }}>
     {#if edit}
@@ -729,7 +736,7 @@
                         editName = unit.name;
                         editOther.push(unit.state);
                     }else if(unit.state === "Working"){
-                        console.log(rooms);
+                        //console.log(rooms);
                         const costumerBersangkutan = data?.dataCustomers?.find(x => x.unitId === unit.id) ?? undefined;
                         if(!costumerBersangkutan){
                             newMsgBox.push({
@@ -807,7 +814,7 @@
     {/if}
     </ListingComp> 
 {:else if menuClick === "Input Masalah"}
-    <ListingComp disableAddButton={true} title="Masalah" editable={false} items={[]} ifItems={false} ifOther={false} itemEdit={true} selectedItemsID={0} onclick={() => {
+    <ListingComp refreshButton={() => {invalidateAll(); refreshData()}} disableAddButton={true} title="Masalah" editable={false} items={[]} ifItems={false} ifOther={false} itemEdit={true} selectedItemsID={0} onclick={() => {
 
     }}>
         {#if edit}
@@ -979,7 +986,7 @@
         {/if}
     </ListingComp>
 {:else if menuClick === "Absensi"}
-    <ListingComp title="Absensi" disableAddButton={true} editable={false} items={[]} ifItems={false} ifOther={false} itemEdit={true} selectedItemsID={0} onclick={() => {
+    <ListingComp  refreshButton={() => {invalidateAll(); refreshData()}} title="Absensi" disableAddButton={true} editable={false} items={[]} ifItems={false} ifOther={false} itemEdit={true} selectedItemsID={0} onclick={() => {
 
     }}>
     {#if !edit && !lihatAbsen}

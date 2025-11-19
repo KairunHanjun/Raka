@@ -743,13 +743,20 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                         if(result === 'yes' && !deleting){
                             deleting = true;
                             try{
+                                newMsgBoxBackUp.push({
+                                    Title: "Loading",
+                                    Message: "Harap Tunggu",
+                                    NotificationType: "info",
+                                    Action: () => {}
+                                });
                                 await fetch('/logout', {
                                     method: 'GET'
                                 });
                                 deleting = false;
+                                deleteArray(newMsgBoxBackUp, "Loading");
                                 newMsgBox = undefined!
                                 goto('/')
-                            }catch (error) {console.log(error);}
+                            }catch (error) {console.log(error); deleteArray(newMsgBoxBackUp, "Loading");}
                         }else if(result === 'no' && !deleting){
                            newMsgBox = undefined!
                         }
@@ -841,7 +848,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
             </footer>
         </div>
     {:else if subMenu.laporan >= 1 && subMenu.pengaturan === 0}
-        <ListingComp disableAddButton={true} editable={false} items={laporanItems} ifItems={true} ifOther={false} title={subMenu.titleSubMenu} itemEdit={itemEdit} selectedItemsID={subMenu.currentItemEditID}>
+        <ListingComp refreshButton={() => {invalidateAll(); refreshData();}} disableAddButton={true} editable={false} items={laporanItems} ifItems={true} ifOther={false} title={subMenu.titleSubMenu} itemEdit={itemEdit} selectedItemsID={subMenu.currentItemEditID}>
             <section class="flex flex-col justify-between items-center">
                 <div class="w-full h-full flex flex-col justify-between items-center bg-amber-100 gap-2">
                     <div class="w-full h-fit flex justify-between items-center">
@@ -1124,7 +1131,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
     <!-- HERE LAY THE ADD AND EDIT ACCOUNT -->
     {:else if subMenu.pengaturan >= 1 && subMenu.laporan === 0}
         {#if subMenu.pengaturan == 2 && menuClick[3]}
-            <ListingComp disableAddButton={false} editable={true} items={userItems} ifItems={pengaturanAturan2[0]} ifOther={false} itemEdit={pengaturanAturan2[1]} title={subMenu.titleSubMenu} selectedItemsID={forAccount} onclick={() => {
+            <ListingComp refreshButton={() => {invalidateAll(); refreshData()}} disableAddButton={false} editable={true} items={userItems} ifItems={pengaturanAturan2[0]} ifOther={false} itemEdit={pengaturanAturan2[1]} title={subMenu.titleSubMenu} selectedItemsID={forAccount} onclick={() => {
                 addAccount = true; 
                 pengaturanClick2();
                 forAccount = 1 ;
@@ -1183,7 +1190,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
             </ListingComp>
         <!-- HERE LAY THE ADD UNIT -->
         {:else if subMenu.pengaturan == 2 && menuClick[4]}
-            <ListingComp disableAddButton={false} editable={true} items={unitItems} ifItems={pengaturanAturan2[0]} ifOther={false} itemEdit={pengaturanAturan2[1]} title={subMenu.titleSubMenu} selectedItemsID={0} onclick={() => {
+            <ListingComp refreshButton={() => {invalidateAll(); refreshData()}} disableAddButton={false} editable={true} items={unitItems} ifItems={pengaturanAturan2[0]} ifOther={false} itemEdit={pengaturanAturan2[1]} title={subMenu.titleSubMenu} selectedItemsID={0} onclick={() => {
                 pengaturanClick2();
                 emptiedArray(edit);
                 submiting = false;
@@ -1250,7 +1257,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
             </ListingComp>
         <!-- HERE LAY THE ADD AGENT -->
         {:else if subMenu.pengaturan == 2 && menuClick[5]}
-            <ListingComp disableAddButton={false} editable={true} items={agentItems} ifItems={pengaturanAturan2[0]} ifOther={false} itemEdit={pengaturanAturan2[1]} title={subMenu.titleSubMenu} selectedItemsID={0} onclick={() => {
+            <ListingComp refreshButton={() => {invalidateAll(); refreshData()}} disableAddButton={false} editable={true} items={agentItems} ifItems={pengaturanAturan2[0]} ifOther={false} itemEdit={pengaturanAturan2[1]} title={subMenu.titleSubMenu} selectedItemsID={0} onclick={() => {
                 pengaturanClick2();
                 emptiedArray(edit);
                 submiting = false;
@@ -1311,7 +1318,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
             </ListingComp>
         {:else}
         <!-- HERE LAY THE MAIN PENGATURAN -->
-            <ListingComp disableAddButton={true} editable={false} items={pengaturanItems} ifItems={pengaturanAturan[0]} ifOther={pengaturanAturan[1]} title={subMenu.titleSubMenu} itemEdit={itemEdit} selectedItemsID = {subMenu.currentItemEditID} onclick={() => {
+            <ListingComp refreshButton={() => {invalidateAll(); refreshData()}} disableAddButton={true} editable={false} items={pengaturanItems} ifItems={pengaturanAturan[0]} ifOther={pengaturanAturan[1]} title={subMenu.titleSubMenu} itemEdit={itemEdit} selectedItemsID = {subMenu.currentItemEditID} onclick={() => {
                 
             }}>
 
@@ -1319,7 +1326,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
         {/if}
     {:else if subMenu.pengaturan < 0 && subMenu.laporan < 0}
         {#if lihatRooms}
-        <ListingComp editable={false} items={[]} ifItems={false} ifOther={false} title="Room" selectedItemsID={0} itemEdit={true} >
+        <ListingComp refreshButton={() => {invalidateAll(); refreshData()}} editable={false} items={[]} ifItems={false} ifOther={false} title="Room" selectedItemsID={0} itemEdit={true} >
             {#if lihatRooms2}
                 <form onsubmit={() => {
                     submiting=true;
@@ -1512,7 +1519,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
             {/if}
         </ListingComp>
         {:else if lihatMasalah}
-        <ListingComp editable={false} items={[]} ifItems={false} ifOther={true} title="Masalah" selectedItemsID={0} itemEdit={false} >
+        <ListingComp refreshButton={() => {invalidateAll(); refreshData()}} editable={false} items={[]} ifItems={false} ifOther={true} title="Masalah" selectedItemsID={0} itemEdit={false} >
             {#if masalahLihat}
                 {#if inspeksiMasalah}
                     <div class=" flex-grow bg-slate-900 rounded-2xl p-3 space-y-3 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-900">
@@ -1576,7 +1583,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
             {/if}
         </ListingComp>
         {:else if lihatAbsensi}
-        <ListingComp editable={false} items={[]} ifItems={false} ifOther={true} title="Absensi" selectedItemsID={0} itemEdit={false} >
+        <ListingComp refreshButton={() => {invalidateAll(); refreshData()}} editable={false} items={[]} ifItems={false} ifOther={true} title="Absensi" selectedItemsID={0} itemEdit={false} >
             {#if !lihatAbsensi2}
                 <div class=" flex flex-col justify-center items-center text-center flex-grow w-full h-fit bg-slate-900 rounded-2xl p-3 space-y-3 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-900">
                     <p class=" text-white text-2xl font-bold">Front Office Absensi</p>
@@ -1687,4 +1694,6 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
     invalidateAll().then(() => {
         refreshData();
     });
-}} />
+}} onbeforeunload={event => {
+    event.preventDefault();
+}}/>
