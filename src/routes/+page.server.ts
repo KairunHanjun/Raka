@@ -45,12 +45,12 @@ export const actions = {
 			}
 
 			// Check if someone already login with the account
-			const check_session = await db.select().from(session).where(eq(session.userId, user.id));
-			if(check_session.length > 0){
-				return fail(400, {
-					error: "Anda sudah login pada perangkat lain"
-				});
-			}
+			// const check_session = await db.select().from(session).where(eq(session.userId, user.id));
+			// if(check_session.length > 0){
+			// 	return fail(400, {
+			// 		error: "Anda sudah login pada perangkat lain"
+			// 	});
+			// }
 
 			// Create session
 			const token = auth.generateSessionToken();

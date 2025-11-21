@@ -862,21 +862,89 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                                 bind:value={selectedYear}
                             />
                         </div>
+                        
                         <div class="w-fit h-fit flex flex-col">
                             <p>Bulan :</p>
                             <select bind:value={selectedMonth} onchange={() => {
-                                console.log(combined);
-                                console.log(filteredMasalah)
+                                
                             }}>
                                 {#each Object.entries(monthMap) as [name, index]}
                                     <option value={index}>{name}</option>
                                 {/each}
                             </select>
                         </div>
-                    </div>                    
+                    </div>
+                    <div class="text-white flex flex-col justify-center items-center text-center flex-grow w-full h-fit bg-slate-700 rounded-2xl p-3 space-y-3 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-900">
+                        <button class="px-5 py-2.5 rounded-xl bg-red-600 text-white font-medium shadow-md hover:bg-red-700 active:scale-95 transition-all duration-200" onclick={async () => {
+                            newMsgBoxBackUp.push({
+                                Title: "Yakin?",
+                                Message: "Yakin ingin menghapus ini?",
+                                NotificationType: 'info',
+                                ButtonType: 'yesno',
+                                Action: async (result) => {
+                                    if(result === 'yes'){
+                                        const formData: FormData = new FormData();
+                                        formData.set('typeOfDelete', 'sebulan');
+                                        formData.set('id', `${subMenu.titleSubMenu}|${selectedYear}-${selectedMonth}-01`);
+                                        newMsgBoxBackUp.push({
+                                            Title: "Harap Tunggu",
+                                            Message: "Harap menunggu saat menghapus data",
+                                            NotificationType: 'info',
+                                            Action: () => {
+                                                
+                                            }
+                                        })
+                                        try {
+                                            const response = await fetch('/api/hapus_data', {
+                                                method: 'POST',
+                                                body: formData,
+                                            });
+                                            let result = '';
+                                            if (!response.ok){
+                                                result = await response.text();
+                                                throw new Error(result || 'Error tidak diketahui, hubungi developer');
+                                            }
+                                            
+                                            result = await response.text(); // Or response.text() depending on your API
+                                            newMsgBoxBackUp.push({
+                                                Title: "Berhasil",
+                                                Message: "Berhasil menghapus data",
+                                                NotificationType: 'info',
+                                                ButtonType: 'ok',
+                                                Action: async () => {
+                                                    invalidateAll().then(() => {
+                                                        refreshData();
+                                                    });
+                                                    deleteArray(newMsgBoxBackUp, 'Error Terjadi');
+                                                    deleteArray(newMsgBoxBackUp, 'Berhasil');
+                                                }
+                                            })
+                                        } catch (error) {
+                                            newMsgBoxBackUp.push({
+                                                Title: "Error Terjadi",
+                                                Message: (error as Error).message,
+                                                NotificationType: 'danger',
+                                                ButtonType: 'ok',
+                                                Action: () => {
+                                                    deleteArray(newMsgBoxBackUp, 'Error Terjadi');
+                                                }
+                                            })
+                                        }
+                                        deleteArray(newMsgBoxBackUp, 'Harap Tunggu');
+                                        deleteArray(newMsgBoxBackUp, "Yakin?");
+                                    }else if(result === 'no'){
+                                        deleteArray(newMsgBoxBackUp, "Yakin?");
+                                    }
+                                }
+                            });
+                        }}>
+                            Delete Sebulan
+                        </button>
+                                      
                         {#if subMenu.titleSubMenu === "Unit"}
                             {#each combined as item}
                                 <div class="text-white flex flex-col justify-center items-center text-center flex-grow w-full h-fit bg-slate-900 rounded-2xl p-3 space-y-3 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-slate-900">
+                                    
                                     <div class="item">
                                         <p>Host: {item.hostName}</p>
                                         <p>Nama Kostumer: {item.customersName}</p>
@@ -1118,7 +1186,7 @@ to Dissapear that MessageBox Simply undefined the newMsgBox -->
                                 <p class="opacity-60 text-black">Tidak ada data di bulan ini.</p>
                             {/if}
                         {/if}
-
+                    </div>
                     
                 </div>
                 <button

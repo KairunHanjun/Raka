@@ -12,8 +12,7 @@
 	import { compressImage, deletePic } from "$lib";
     let { data, form }: PageProps = $props();
 
-    
-
+    const valueOfCustomer: Array<string> = $state([]);
     const editOther: string[] = $state([]);
     const accountTypeMap = {
         'FO': 'Front Office',
@@ -56,6 +55,7 @@
     let bindThisInput: HTMLInputElement | undefined = $state(undefined);
     let bindThisInput2: HTMLInputElement | undefined = $state(undefined);
     let bindThisInput3: HTMLInputElement | undefined = $state(undefined);
+    let Halo: HTMLInputElement | undefined = $state(undefined);
     let bindThisSubmit: HTMLButtonElement | undefined = $state(undefined);
     let now: Date = $state(new Date());
     let hours = $derived(now.getHours());
@@ -71,8 +71,9 @@
     let editPrice: number = $state(0);
     let picId1 = $state('');
     let approve = $state('');
+    let checkSesuai: boolean = $state(false);
 
-    async function upload(){
+    async function upload(withBind: boolean = true){
         if(bindThisInput2?.files){
             submiting=true;
             newMsgBox.push({
@@ -86,6 +87,7 @@
                 const formData = new FormData();
                 formData.set('img1', compressedImage1);
                 formData.set("once", "1");
+                console.log(compressedImage1);
                 if(!compressedImage1){throw new Error("Gambar tidak ada")}
                 const res = await fetch("/api/upload_pic", {
                     method: "POST",
@@ -96,18 +98,21 @@
                     if(bindThisInput3){
                         picId1 = responseText;
                         bindThisInput3.value = picId1;
-                        bindThisSubmit?.click();
+                        if(withBind){
+                            bindThisSubmit?.click();
+                        }
                     }
                 });
+                deleteArray(newMsgBox, 'Loading');
             } catch (error) {
                 deleteArray(newMsgBox, 'Loading');
                 newMsgBox.push({
-                    Title: "Error Terjadi",
+                    Title: "Error",
                     Message: (error as Error).message,
                     NotificationType: "danger",
                     ButtonType: 'ok',
                     Action: () => {
-                        deleteArray(newMsgBox, 'Error Terjadi');
+                        deleteArray(newMsgBox, 'Error');
                     }
                 });
             }
@@ -392,7 +397,7 @@
             <h1 class="text-white! text-2xl font-bold">{editName}</h1>
         </div>
         {#if editOther[0] === "Ready"}
-            <form onsubmit={() => {
+            <form onsubmit={async () => {
                 
             }} action="?/costumer" method="post" class="flex flex-col w-full h-fit gap-2" enctype="multipart/form-data" use:enhance={async () => {
                 return async ({update}) => {
@@ -441,12 +446,37 @@
                     anyThing = undefined!;
                 }
             }}>
+                {#if checkSesuai}
+                    <MessageBox title="Apakah sudah benar?" type='info' buttonType='ok' handleResult={async (result) => {
+                        
+                    }}>
+                        <div class="w-full h-fit flex flex-col justify-center justify-items-center items-center text-center gap-1">
+                            <div class="w-full h-fit flex justify-center justify-items-center items-center text-center gap-0.5">
+                                <div class="w-full h-fit flex flex-col justify-center justify-items-center items-center text-center">
+                                    <p class="text-[1rem] font-bold">Foto KTP Anda</p>
+                                    <img src={anyThing} alt="" />
+                                </div>
+                            </div>
+                            <p class="font-bold text-[1rem] text-center">Nama Kostumer: {valueOfCustomer[0]}</p>
+                            <p class="font-bold text-[1rem] text-center">Berapa Lama: {valueOfCustomer[1]}</p>
+                            <p class="font-bold text-[1rem] text-center">Masuk: {valueOfCustomer[2]}</p>
+                            <p class="font-bold text-[1rem] text-center">Keluar: {valueOfCustomer[3]}</p>
+                            <p class="font-bold text-[1rem] text-center">Agent: {valueOfCustomer[4]}</p>
+                            <p class="font-bold text-[1rem] text-center">Harga: {valueOfCustomer[5]}</p>
+                            <p class="font-bold text-[1rem] text-center">Komisi: {valueOfCustomer[6]}</p>
+                            {console.log(valueOfCustomer)}
+                        </div>
+                    </MessageBox>
+                {/if}
                 <label for="name">Nama Customer: </label>
-                <input type="text" name="name" id="name" required>
+                <input type="text" name="name" id="name" onchange={({currentTarget}) => {
+                    valueOfCustomer[0] = (currentTarget.value);
+                }} required>
                 <label for="duration">Lama: </label>
                 <select name="duration" id="duration" bind:this={bindThisSelect} onchange={() => {
                     updateWaktu = updateDataToTime();
                     JamorHari = bindThisSelect?.options[bindThisSelect.selectedIndex].text ?? '';
+                    valueOfCustomer[1] = (JamorHari);
                 }} required>
                     <option value="3">3 Jam</option>
                     <option value="6">6 Jam</option>
@@ -460,37 +490,38 @@
                     <div class="flex justify-between items-center h-fit w-full">
                         <div class="flex flex-col h-fit w-fit">
                             <label for="enter">Jam Masuk: </label>
-                            <input type="time" name="enter" id="" bind:this={bindThisInput} onchange={() => updateWaktu = updateDataToTime()} required>
+                            <input type="time" name="enter" id="" bind:this={bindThisInput} onchange={({currentTarget}) => {updateWaktu = updateDataToTime(); valueOfCustomer[2] = (currentTarget.value);}} required>
                         </div>
                         
                         <div class="flex flex-col h-fit w-fit">
                             <label for="out">Jam Keluar: </label>
-                            <input type="time" name="out" id="" readonly={bindThisSelect?.options[bindThisSelect?.selectedIndex].text !== "Kostum Jam"} value={updateWaktu} required>
+                            <input type="time" name="out" id="" bind:this={Halo} readonly={bindThisSelect?.options[bindThisSelect?.selectedIndex].text !== "Kostum Jam"} value={updateWaktu} onchange={({currentTarget}) => {valueOfCustomer[3] = (currentTarget.value);}} required>
                         </div>
                     </div>
                 {:else}
                     <div class="flex flex-col justify-between items-center h-fit w-full">
                         <div class="flex flex-col h-fit w-fit">
                             <label for="enter">Hari Masuk: </label>
-                            <input type="date" name="enter" id="" required>
+                            <input type="date" name="enter" onchange={({currentTarget}) => {valueOfCustomer[2] = (currentTarget.value);}} id="" required>
                         </div>
                         
                         <div class="flex flex-col h-fit w-fit">
                             <label for="out">Hari Keluar: </label>
-                            <input type="date" name="out" id="" required>
+                            <input type="date" name="out" onchange={({currentTarget}) => {valueOfCustomer[3] = (currentTarget.value);}} id="" required>
                         </div>
                     </div>
                 {/if}
                 <label for="agent">Pilih Agent: </label>
-                <select name="agent" id="" required>
+                <select name="agent" id="" onchange={({currentTarget}) => {valueOfCustomer[4] = (currentTarget.options[currentTarget.selectedIndex].text ?? '');}} required>
+                    <option value="">Pilih Agent Kamu</option>
                     {#each data?.dataAgents as agent}
                         <option value={agent.id + "|" + agent.createdByWho}>{agent.nameAgent}</option>
                     {/each}
                 </select>
                 <label for="price">Input Harga: </label>
-                <input type="number" name="price" pattern="[0-9]*" id="" required>
+                <input type="number" name="price" pattern="[0-9]*" id="" onchange={({currentTarget}) => {valueOfCustomer[5] = (currentTarget.value);}} required>
                 <label for="komisi">Input Komisi: </label>
-                <input type="number" name="komisi" pattern="[0-9]*" id="" required>
+                <input type="number" name="komisi" pattern="[0-9]*" id="" onchange={({currentTarget}) => {valueOfCustomer[6] = (currentTarget.value);}} required>
                 <img src={anyThing} alt="" />
                 <input onchange={
                     ({currentTarget})=>{
@@ -509,6 +540,8 @@
                 <button type="button" class="flex w-full h-fit bg-gradient-to-b from-green-500 via-green-600 to-green-700 justify-center items-center text-center text-2xl rounded-2xl font-sans"
                 onclick={async () => {
                     await upload();
+                    valueOfCustomer[3] = (Halo?.value ?? '');
+                    checkSesuai = true;
                 }}
                 > Submit </button>
                 <button type="submit" class="hidden" aria-label="i" bind:this={bindThisSubmit}></button>
@@ -654,7 +687,7 @@
                         </div>
                     </div>
                     <p class="font-bold text-[1rem] text-center">{editOther[1]}</p>
-                    <p class="font-bold text-2xl text-center">Apakah semuanya aman?</p>
+                    <p class="font-bold text-2xl text-center">Data Pelanggan Anda</p>
                     <div class="w-full h-full flex justify-center justify-items-center items-center text-center">
                         <button class={`${(submiting) ? "hidden" : ""} flex w-full h-fit bg-gradient-to-b from-green-500 via-green-600 to-green-700 justify-center items-center text-center text-2xl rounded-2xl font-sans`} onclick={async () => {
                             approve = "Terima";

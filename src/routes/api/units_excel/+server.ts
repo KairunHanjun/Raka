@@ -27,12 +27,14 @@ export const POST = async ({ request }) => {
 
 
 		// Add rows
+		let temp: number = 0;
 		for (const item of data ?? []) {
+			temp++;
 			const row = sheet.addRow({
-				No: item.no,
+				No: temp,
 				Host: item.hostName ?? '',
-				Nama_Kostumer: item.customerName ?? '',
-				Agent: item.agent ?? '',
+				Nama_Kostumer: item.customersName ?? '',
+				Agent: item.agents ?? '',
 				Durasi: item.duration ? Number(item.duration) : '',
 				Harga: item.price ? Number(item.price) : '',
 				Komisi: item.commision ? Number(item.commision) : '',
