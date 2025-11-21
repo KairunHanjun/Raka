@@ -478,6 +478,7 @@
                     JamorHari = bindThisSelect?.options[bindThisSelect.selectedIndex].text ?? '';
                     valueOfCustomer[1] = (JamorHari);
                 }} required>
+                    <option value="">Pilih Jam atau Kostum</option>
                     <option value="3">3 Jam</option>
                     <option value="6">6 Jam</option>
                     <option value="9">9 Jam</option>
@@ -539,7 +540,7 @@
                 <input type="hidden" name="pic1Id" bind:this={bindThisInput3}>
                 <button type="button" class="flex w-full h-fit bg-gradient-to-b from-green-500 via-green-600 to-green-700 justify-center items-center text-center text-2xl rounded-2xl font-sans"
                 onclick={async () => {
-                    await upload();
+                    await upload(false);
                     valueOfCustomer[3] = (Halo?.value ?? '');
                     checkSesuai = true;
                 }}
@@ -732,6 +733,7 @@
         <div class="flex w-full h-fit justify-between gap-2 bg-blue-950 rounded-2xl p-2">
             <div class="flex flex-col w-full h-fit justify-between">
                 <div class="flex w-fit h-fit items-center object-center">
+                    
                     <div class="w-0 h-0 me-2 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[11px] border-b-green-600"></div>
                     <h2 class="text-white text-[12px] font-bold">Ready : {(rooms.filter(room => room.state === 'Ready').length)} Unit</h2>
                 </div>
